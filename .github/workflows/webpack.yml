@@ -1,38 +1,35 @@
 name: NodeJS with Webpack
 
 on:
-  push:
-    branches: [ master ]
- 
+    push:
+        branches: [master]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [16.x]
-    
-    steps:
-    - uses: actions/checkout@v3
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [16.x]
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
+        steps:
+            - uses: actions/checkout@v3
 
-    - name: Build
-      run: |
-        curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-        yarn install
-        yarn build
-        cd dist
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
 
-        
+            - name: Build
+              run: |
+                  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+                  yarn install
+                  yarn build
+                  cd dist
+            - name: Deploy
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./dist
