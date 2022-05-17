@@ -28,4 +28,12 @@ jobs:
         curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
         yarn install
         yarn build
+        cd dist
+        git config --global user.name 'Bot'
+        git config --global user.email 'dylanmashini@users.noreply.github.com'
+        git init
+        git add -A
+        git commit -m 'deploy'
+        git push -f master:gh-pages
+
         
