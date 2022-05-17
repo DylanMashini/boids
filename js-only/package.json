@@ -13,6 +13,7 @@
     "vite": "^2.9.0"
   },
   "dependencies": {
+    "ncp": "^2.0.0",
     "three": "^0.139.2",
     "three-orbit-controls": "^82.1.0"
   }
