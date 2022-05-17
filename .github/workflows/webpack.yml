@@ -28,6 +28,7 @@ jobs:
                   yarn install
                   yarn build
                   cd js-only
+                  yarn install
                   yarn build
             - name: Deploy
               uses: peaceiris/actions-gh-pages@v3
