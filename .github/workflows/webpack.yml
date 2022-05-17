@@ -19,8 +19,9 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Use Cargo
-      uses: actions-rs/cargo@v1.0.1
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
 
     - name: Build
       run: |
