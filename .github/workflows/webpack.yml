@@ -27,7 +27,8 @@ jobs:
                   curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
                   yarn install
                   yarn build
-                  cd dist
+                  cd boids-js
+                  yarn build
             - name: Deploy
               uses: peaceiris/actions-gh-pages@v3
               with:
