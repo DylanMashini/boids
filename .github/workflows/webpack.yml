@@ -3,13 +3,11 @@ name: NodeJS with Webpack
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+ 
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [16.x]
@@ -21,7 +19,7 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Use Node.js ${{ matrix.node-version }}
+    - name: Use Cargo
       uses: actions-rs/cargo@v1.0.1
 
     - name: Build
