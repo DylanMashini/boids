@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import * as Stats from "stats.js";
 import setup from "./setup";
-const wasm = import("../pkg/boids_wasm");
 import changeBox from "./changeBox";
+const wasm = import("../pkg/boids_wasm");
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 

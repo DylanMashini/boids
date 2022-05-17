@@ -13,25 +13,25 @@ extern crate serde_derive;
 #[derive(Clone)]
 #[wasm_bindgen]
 pub struct Settings {
-    maxSpeed: f64,
-    maxForce: f64,
-    neighbohoodSize: f64,
-    colorSeperation: bool,
+    max_speed: f64,
+    max_force: f64,
+    neighbohood_size: f64,
+    _color_seperation: bool,
     highlight: bool,
 }
 impl Settings {
     fn new(
-        maxSpeed: f64,
-        maxForce: f64,
-        neighbohoodSize: f64,
-        colorSeperation: bool,
+        max_speed: f64,
+        max_force: f64,
+        neighbohood_size: f64,
+        color_seperation: bool,
         highlight: bool,
     ) -> Settings {
         Settings {
-            maxSpeed: maxSpeed,
-            maxForce: maxForce,
-            neighbohoodSize: neighbohoodSize,
-            colorSeperation: colorSeperation,
+            max_speed,
+            max_force,
+            neighbohood_size,
+            _color_seperation: color_seperation,
             highlight: highlight,
         }
     }
@@ -39,7 +39,7 @@ impl Settings {
 
 #[wasm_bindgen]
 pub fn animate(
-    BoidsObj: &JsValue,
+    boids_obj: &JsValue,
     max_speed: f64,
     max_force: f64,
     neighbohood_size: f64,
@@ -56,101 +56,101 @@ pub fn animate(
     );
     //convert JsValue to Vec<Vector3>
     //this is vector of Vector3 of boid positions
-    let Boids: Vec<Boid> = BoidsObj.into_serde().unwrap();
-    let mut nearBoids: Vec<Boid> = vec![];
-    let mut highlightVectors: Vec<i16> = vec![];
+    let boids: Vec<Boid> = boids_obj.into_serde().unwrap();
+    let mut near_boids: Vec<Boid> = vec![];
+    let mut highlight_vectors: Vec<i16> = vec![];
 
-    for (i, boid) in Boids.iter().enumerate() {
-        let mut vel = Vector3::new(0.0, 0.0, 0.0);
-        let mut seperationSum = Vector3::new(0.0, 0.0, 0.0);
-        let mut seperationCount = 0.0;
-        let mut alignmentSum = Vector3::new(0.0, 0.0, 0.0);
-        let mut alignmentCount = 0.0;
-        let mut cohesionSum = Vector3::new(0.0, 0.0, 0.0);
-        let mut cohesionCount = 0.0;
-        let mut boidVector = Vector3::new(boid.pos.x, boid.pos.y, boid.pos.z);
+    for (i, boid) in boids.iter().enumerate() {
+        let mut seperation_sum = Vector3::new(0.0, 0.0, 0.0);
+        let mut seperation_count = 0.0;
+        let mut alignment_sum = Vector3::new(0.0, 0.0, 0.0);
+        let mut alignment_count = 0.0;
+        let mut cohesion_sum = Vector3::new(0.0, 0.0, 0.0);
+        let mut cohesion_count = 0.0;
+        let boid_vector = Vector3::new(boid.pos.x, boid.pos.y, boid.pos.z);
         if i == 0 && settings.highlight {
-            highlightVectors.push(i as i16);
+            highlight_vectors.push(i as i16);
         }
-        for (i2, boid2) in Boids.iter().enumerate() {
+        for (i2, boid2) in boids.iter().enumerate() {
             if !(boid.pos.x == boid2.pos.x
                 && boid.pos.y == boid2.pos.y
                 && boid.pos.z == boid2.pos.z)
             {
                 //boids are uniqe
                 let distance = Vector3::get_distance(
-                    &boidVector,
+                    &boid_vector,
                     &Vector3::new(boid2.pos.x, boid2.pos.y, boid2.pos.z),
                 );
                 if distance > 0.0 {
-                    if distance < settings.neighbohoodSize {
+                    if distance < settings.neighbohood_size {
                         //highlight if nececary
-                        if (i == 0 && settings.highlight) {
-                            highlightVectors.push(i2 as i16);
+                        if i == 0 && settings.highlight {
+                            highlight_vectors.push(i2 as i16);
                         }
-                        //set boid2Vector
-                        let boid2Vector: Vector3 =
+                        //set boid2_vector
+                        let boid2_vector: Vector3 =
                             Vector3::new(boid2.pos.x, boid2.pos.y, boid2.pos.z);
-                        let boid2Vel: Vector3 = Vector3::new(boid2.vel.x, boid2.vel.y, boid2.vel.z);
+                        let boid2_vel: Vector3 =
+                            Vector3::new(boid2.vel.x, boid2.vel.y, boid2.vel.z);
                         //add boid to the allignmentsum
-                        alignmentSum.add(&boid2Vel);
-                        alignmentCount += 1.0;
+                        alignment_sum.add(&boid2_vel);
+                        alignment_count += 1.0;
                         //add to cohesion sum
-                        cohesionSum.add(&boid2Vector);
-                        cohesionCount += 1.0;
+                        cohesion_sum.add(&boid2_vector);
+                        cohesion_count += 1.0;
                         //do seperation rule
-                        let mut vecDir = Vector3::new(0.0, 0.0, 0.0);
-                        vecDir.sub_vectors(&boidVector, &boid2Vector);
-                        vecDir.normalize();
-                        vecDir.divide_scalar(distance);
-                        seperationSum.add(&vecDir);
-                        seperationCount += 1.0;
+                        let mut vec_dir = Vector3::new(0.0, 0.0, 0.0);
+                        vec_dir.sub_vectors(&boid_vector, &boid2_vector);
+                        vec_dir.normalize();
+                        vec_dir.divide_scalar(distance);
+                        seperation_sum.add(&vec_dir);
+                        seperation_count += 1.0;
                     }
                 }
             }
         }
         //finalises alignmentSum Vector
-        if alignmentCount > 0.0 {
-            alignmentSum.divide_scalar(alignmentCount);
-            alignmentSum.set_length(settings.maxSpeed);
-            alignmentSum.sub(&boid.vel);
-            alignmentSum.clamp_length(0.0, settings.maxForce);
+        if alignment_count > 0.0 {
+            alignment_sum.divide_scalar(alignment_count);
+            alignment_sum.set_length(settings.max_speed);
+            alignment_sum.sub(&boid.vel);
+            alignment_sum.clamp_length(0.0, settings.max_force);
         } else {
-            alignmentSum.set(0.0, 0.0, 0.0);
+            alignment_sum.set(0.0, 0.0, 0.0);
         }
-        if cohesionCount > 0.0 {
-            cohesionSum.divide_scalar(cohesionCount);
-            cohesionSum.copy(boid.steer_to(&cohesionSum, settings.maxSpeed, settings.maxForce));
+        if cohesion_count > 0.0 {
+            cohesion_sum.divide_scalar(cohesion_count);
+            cohesion_sum.copy(boid.steer_to(&cohesion_sum, settings.max_speed, settings.max_force));
         }
-        if seperationCount > 0.0 {
-            seperationSum.divide_scalar(seperationCount);
+        if seperation_count > 0.0 {
+            seperation_sum.divide_scalar(seperation_count);
         }
-        if seperationSum.length() > 0.0 {
-            seperationSum.set_length(settings.maxSpeed);
-            seperationSum.sub(&boid.vel);
-            seperationSum.clamp_length(0.0, settings.maxForce);
+        if seperation_sum.length() > 0.0 {
+            seperation_sum.set_length(settings.max_speed);
+            seperation_sum.sub(&boid.vel);
+            seperation_sum.clamp_length(0.0, settings.max_force);
         }
-        let mut finalBoid = boid.clone();
+        let mut final_boid = boid.clone();
 
         let mut acceleration = Vector3::new(0.0, 0.0, 0.0);
-        acceleration.add(&seperationSum);
-        acceleration.add(&alignmentSum);
-        acceleration.add(&cohesionSum);
+        acceleration.add(&seperation_sum);
+        acceleration.add(&alignment_sum);
+        acceleration.add(&cohesion_sum);
 
         //dynamic home based on js input
-        let mut homeForce = boid.steer_to(&boid.home, settings.maxSpeed, settings.maxForce);
+        let mut home_force = boid.steer_to(&boid.home, settings.max_speed, settings.max_force);
         //basic homing
-        // let mut homeForce = boid.steer_to(&Vector3::new(0.0, 0.0, 0.0), settings.maxSpeed, 0.03);
-        homeForce.multiply_scalar(1.3);
-        acceleration.sub(&homeForce);
-        finalBoid.vel.add(&acceleration);
-        finalBoid.vel.clamp_length(0.0, settings.maxSpeed);
-        if (highlightVectors.contains(&(i as i16))) {
-            finalBoid.highlight = true;
+        // let mut home_force = boid.steer_to(&Vector3::new(0.0, 0.0, 0.0), settings.maxSpeed, 0.03);
+        home_force.multiply_scalar(1.3);
+        acceleration.sub(&home_force);
+        final_boid.vel.add(&acceleration);
+        final_boid.vel.clamp_length(0.0, settings.max_speed);
+        if highlight_vectors.contains(&(i as i16)) {
+            final_boid.highlight = true;
         } else {
-            finalBoid.highlight = false
+            final_boid.highlight = false
         }
-        nearBoids.push(finalBoid);
+        near_boids.push(final_boid);
     }
-    return JsValue::from_serde(&nearBoids).unwrap();
+    return JsValue::from_serde(&near_boids).unwrap();
 }
