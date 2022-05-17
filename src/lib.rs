@@ -41,7 +41,7 @@ impl Settings {
 #[wasm_bindgen]
 pub fn animate(BoidsObj: &JsValue) -> JsValue {
     //tempararily use default settings
-    let settings = Settings::new(0.5, 0.03, 20.0, false, true);
+    let settings = Settings::new(0.5, 0.03, 20.0, false, false);
     //convert JsValue to Vec<Vector3>
     //this is vector of Vector3 of boid positions
     let Boids: Vec<Boid> = BoidsObj.into_serde().unwrap();
