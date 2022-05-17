@@ -13,6 +13,7 @@
     "vite": "^2.9.0"
   },
   "dependencies": {
+    "@types/stats.js": "^0.17.0",
     "ncp": "^2.0.0",
     "stats.js": "^0.17.0",
     "three": "^0.139.2",
