@@ -1,9 +1,8 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 import * as Stats from "stats.js";
-const wasm = import("./pkg/wasm_testing");
-
+import setup from "./setup";
+const wasm = import("../pkg/wasm_testing");
+import changeBox from "./changeBox";
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 
@@ -81,7 +80,7 @@ form.addEventListener("submit", e => {
 		settings["boxSize"] = Number(form["boxSize"].value);
 
 		//than run function that changes the box displayed
-		[boxgeo, boxmat, box] = changeBox(boxgeo, boxmat, box, scene);
+		[boxgeo, boxmat, box] = changeBox(boxgeo, boxmat, box, scene, settings);
 	}
 
 	if (settings["sphere"] != form["sphere"].checked) {
@@ -97,7 +96,7 @@ form.addEventListener("submit", e => {
 			document.getElementById("containerLabel")!.innerHTML =
 				"Sphere Size";
 		} else {
-			changeBox(boxgeo, boxmat, box, scene);
+			changeBox(boxgeo, boxmat, box, scene, settings);
 
 			document.getElementById("containerLabel")!.innerHTML = "Box Size";
 		}
@@ -119,7 +118,7 @@ form.addEventListener("submit", e => {
 	settings["boidCount"] = Number(form["boidCount"].value);
 });
 
-class boid extends THREE.Mesh {
+export class boid extends THREE.Mesh {
 	rot: THREE.Vector3;
 	vel: THREE.Vector3;
 	home: THREE.Vector3;
@@ -206,20 +205,7 @@ class boid extends THREE.Mesh {
 	}
 }
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-	75,
-	window.innerWidth / window.innerHeight,
-	0.1,
-	1000
-);
-const renderer = new THREE.WebGLRenderer({
-	canvas: document.querySelector("#canvas") as HTMLCanvasElement,
-});
-document.body.appendChild(VRButton.createButton(renderer));
-renderer.xr.enabled = true;
-
-scene.background = new THREE.Color(0xffffff);
+const { scene, renderer, camera, boids } = setup(settings);
 let boxgeo: any = new THREE.BoxGeometry(
 	settings.boxSize,
 	settings.boxSize,
@@ -229,46 +215,10 @@ let boxmat = new THREE.MeshBasicMaterial({ color: 0x000000 });
 boxmat.transparent = true;
 boxmat.opacity = 0.1;
 let box = new THREE.Mesh(boxgeo, boxmat);
-//function to create a new box on setting change
-const changeBox = (
-	boxgeo: THREE.BoxGeometry,
-	boxmat: THREE.MeshBasicMaterial,
-	box: THREE.Mesh,
-	scene: THREE.Scene
-): [
-	THREE.BoxGeometry,
-	THREE.MeshBasicMaterial,
-	THREE.Mesh<any, THREE.MeshBasicMaterial>
-] => {
-	boxgeo.dispose();
-	//create a new geometry with the new size
-	const newGeo = new THREE.BoxGeometry(
-		settings.boxSize,
-		settings.boxSize,
-		settings.boxSize
-	);
-	const newMesh = new THREE.Mesh(newGeo, boxmat);
-	//remove the old box
-	scene.remove(box);
-	//add the new box
-	scene.add(newMesh);
-	//return the new box constants
-	return [newGeo, boxmat, newMesh];
-};
+
 scene.add(box);
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
-camera.position.setZ(settings.boxSize + 15);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.update();
 
-//initialize boids
-const boids = new Array<boid>();
-for (let i = 0; i < settings.boidCount; i++) {
-	const bird = new boid(scene);
-	boids.push(bird);
-}
-
+//animation loop
 wasm.then(module => {
 	const stats = new Stats();
 	stats.showPanel(0);
