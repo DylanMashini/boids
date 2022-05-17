@@ -10,12 +10,13 @@ const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 let settings = {
 	maxSpeed: 0.5,
 	maxForce: 0.03,
-	neighbohoodSize: 6,
+	neighbohoodSize: 20,
 	boidCount: 1000,
 	boxSize: 200,
 	randomHome: true,
 	colorSeperation: false,
 	sphere: false,
+	highlight: false,
 };
 //get html form
 const form = document.querySelector("form")!;
@@ -244,7 +245,12 @@ wasm.then(module => {
 					},
 					highlight: boid.highlight,
 				};
-			})
+			}),
+			settings.maxSpeed,
+			settings.maxForce,
+			settings.neighbohoodSize,
+			settings.colorSeperation,
+			settings.highlight
 		);
 		boids.forEach((boid, i) => {
 			boids[i].vel.set(
