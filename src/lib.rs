@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-extern crate web_sys;
 // import Vector3
 #[path = "./Vector3.rs"]
 pub mod vector3_module;
