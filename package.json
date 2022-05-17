@@ -11,7 +11,7 @@
     },
     "scripts": {
         "dev": "wasm-pack build && webpack --config ./webpack.config.js --mode development && ncp ./index.html ./dist/index.html && node start.js",
-        "build": "wasm-pack build && webpack --config ./webpack.config.js --mode production && ncp ./index.html ./dist/index.html"
+        "build": "wasm-pack build && webpack --config ./webpack.config.js --mode production && ncp ./index.html ./dist/index.html && ncp ./style.css ./dist/style.css"
     },
     "devDependencies": {
         "@types/three": "^0.140.0",
