@@ -1,7 +1,11 @@
 use wasm_bindgen::prelude::*;
+extern crate console_error_panic_hook;
+//import webworker and console from web_sys
+use web_sys::{console, Worker};
 // import Vector3
 #[path = "./Vector3.rs"]
 pub mod vector3_module;
+use js_sys::*;
 use vector3_module::Vector3;
 // import Boid
 #[path = "./Boid.rs"]
@@ -9,6 +13,35 @@ pub mod boid_module;
 use boid_module::Boid;
 #[macro_use]
 extern crate serde_derive;
+
+//declare startup function that spawns webworker
+#[wasm_bindgen]
+//replace with sharedmemory
+pub fn startup(buffer: &SharedArrayBuffer) -> Worker {
+    let mut web_worker = Worker::new("./worker.js");
+    match &mut web_worker {
+        Ok(worker) => {
+            console::log_1(&JsValue::from_str("Worker created"));
+            match worker.post_message(buffer) {
+                Ok(_) => {
+                    console::log_1(&JsValue::from_str("Buffer sent to worker"));
+                }
+                Err(e) => {
+                    console::log_1(&JsValue::from_str(&format!("Error: {:?}", e)));
+                }
+            };
+        }
+        Err(e) => {
+            console::log_1(&JsValue::from_str(&format!(
+                "Worker creation failed: {:?}",
+                e
+            )));
+            panic!("Worker creation failed: {:?}", e);
+        }
+    }
+    web_sys::console::log_1(&"spawned".into());
+    return web_worker.unwrap();
+}
 
 #[derive(Clone)]
 #[wasm_bindgen]
@@ -39,13 +72,14 @@ impl Settings {
 
 #[wasm_bindgen]
 pub fn animate(
-    boids_obj: &JsValue,
+    boids_obj: &[f64],
     max_speed: f64,
     max_force: f64,
     neighbohood_size: f64,
     color_seperation: bool,
     highlight: bool,
-) -> JsValue {
+) -> Vec<f64> {
+    console_error_panic_hook::set_once();
     //tempararily use default settings
     let settings = Settings::new(
         max_speed,
@@ -56,7 +90,7 @@ pub fn animate(
     );
     //convert JsValue to Vec<Vector3>
     //this is vector of Vector3 of boid positions
-    let boids: Vec<Boid> = boids_obj.into_serde().unwrap();
+    let boids = Boid::new_from_f64_array(boids_obj);
     let mut near_boids: Vec<Boid> = vec![];
     let mut highlight_vectors: Vec<i16> = vec![];
 
@@ -150,7 +184,20 @@ pub fn animate(
         } else {
             final_boid.highlight = false
         }
+        final_boid.pos.add(&final_boid.vel);
         near_boids.push(final_boid);
     }
-    return JsValue::from_serde(&near_boids).unwrap();
+    let final_boids = Boid::to_f64_arr(near_boids);
+    if final_boids.len() != boids_obj.len() {
+        console::log_1(
+            &format!(
+                "boids length not equal {} != {}",
+                final_boids.len(),
+                boids_obj.len(),
+            )
+            .into(),
+        );
+        panic!("boids length not equal");
+    }
+    return final_boids;
 }

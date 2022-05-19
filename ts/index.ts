@@ -1,8 +1,15 @@
 import * as THREE from "three";
-import * as Stats from "stats.js";
+// import * as Stats from "stats.js";
 import setup from "./setup";
 import changeBox from "./changeBox";
-const wasm = import("../pkg/boids_wasm");
+
+const { startup } = wasm_bindgen;
+
+let sharedMemory = new SharedArrayBuffer(
+	new Float64Array(9000).byteLength + new Int8Array(1).byteLength
+);
+let f64Array = new Float64Array(sharedMemory, 0, 9000);
+let counter = new Int8Array(sharedMemory, f64Array.byteLength);
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 
@@ -158,10 +165,10 @@ export class boid extends THREE.Mesh {
 			this.material.color.setHex(colorList[this.group]);
 		}
 		if (this.vel.x == 0) {
-			console.log(this.vel);
+			// console.log(this.vel);
 		}
 		//update the position with the velocity
-		this.position.add(this.vel);
+		// this.position.add(this.vel);
 		//set the rotation
 		this.quaternion.setFromUnitVectors(
 			new THREE.Vector3(0, 1, 0),
@@ -207,6 +214,19 @@ export class boid extends THREE.Mesh {
 }
 
 const { scene, renderer, camera, boids } = setup(settings);
+//add boids to sharedBufferArray
+for (let i = 0; i < settings.boidCount; i++) {
+	f64Array[i * 9] = boids[i].position.x;
+	f64Array[i * 9 + 1] = boids[i].position.y;
+	f64Array[i * 9 + 2] = boids[i].position.z;
+	f64Array[i * 9 + 3] = boids[i].vel.x;
+	f64Array[i * 9 + 4] = boids[i].vel.y;
+	f64Array[i * 9 + 5] = boids[i].vel.z;
+	f64Array[i * 9 + 6] = boids[i].home.x;
+	f64Array[i * 9 + 7] = boids[i].home.y;
+	f64Array[i * 9 + 8] = boids[i].home.z;
+}
+
 let boxgeo: any = new THREE.BoxGeometry(
 	settings.boxSize,
 	settings.boxSize,
@@ -220,47 +240,37 @@ let box = new THREE.Mesh(boxgeo, boxmat);
 scene.add(box);
 
 //animation loop
-wasm.then(module => {
-	const stats = new Stats();
-	stats.showPanel(0);
+
+wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
+	//spawn webworker
+	console.log(counter[0]);
+	let webWorker = startup(sharedMemory);
+	//create previous tick val
+	let prevTick: number;
+	let stats = new Stats();
 	document.body.appendChild(stats.dom);
 	renderer.setAnimationLoop(function () {
-		stats.begin();
-		renderer.render(scene, camera);
-		let updatedBoids = module.animate(
-			boids.map(boid => {
-				return {
-					vel: { x: boid.vel.x, y: boid.vel.y, z: boid.vel.z },
-					pos: {
-						x: boid.position.x,
-						y: boid.position.y,
-						z: boid.position.z,
-					},
-					home: { x: 0, y: 0, z: 0 },
-					quaternion: {
-						_x: boid.quaternion.x,
-						_y: boid.quaternion.y,
-						_z: boid.quaternion.z,
-						_w: boid.quaternion.w,
-					},
-					highlight: boid.highlight,
-				};
-			}),
-			settings.maxSpeed,
-			settings.maxForce,
-			settings.neighbohoodSize,
-			settings.colorSeperation,
-			settings.highlight
-		);
-		boids.forEach((boid, i) => {
-			boids[i].vel.set(
-				updatedBoids[i].vel.x,
-				updatedBoids[i].vel.y,
-				updatedBoids[i].vel.z
-			);
-			boids[i].highlight = updatedBoids[i].highlight;
-			boids[i].updateBoid();
-		});
-		stats.end();
+		if (prevTick != counter[0]) {
+			stats.begin();
+			prevTick = counter[0];
+			boids.forEach((boid, i) => {
+				boid.position.x = f64Array[i * 9];
+				boid.position.y = f64Array[i * 9 + 1];
+				boid.position.z = f64Array[i * 9 + 2];
+				boid.vel.x = f64Array[i * 9 + 3];
+				boid.vel.y = f64Array[i * 9 + 4];
+				boid.vel.z = f64Array[i * 9 + 5];
+				boid.updateBoid();
+				//update sharedBufferArray positions
+				// f64Array[i * 9] = boid.position.x;
+				// f64Array[i * 9 + 1] = boid.position.y;
+				// f64Array[i * 9 + 2] = boid.position.z;
+			});
+			renderer.render(scene, camera);
+			stats.end();
+		} else {
+			//render so motion is more smooth based on user input
+			renderer.render(scene, camera);
+		}
 	});
 });

@@ -10,7 +10,7 @@
         "webpack-cli": "^4.9.2"
     },
     "scripts": {
-        "dev": "rm -rf ./dist && wasm-pack build && webpack --config ./webpack.config.js --mode development && ncp ./static ./dist && node start.js",
+        "dev": "rm -rf ./dist && wasm-pack build --target no-modules && mkdir ./dist && ncp ./pkg ./dist/pkg && webpack --config ./webpack.config.js --mode development && ncp ./static ./dist && node start.js",
         "build": "wasm-pack build && webpack --config ./webpack.config.js --mode production && ncp ./static ./dist"
     },
     "devDependencies": {
