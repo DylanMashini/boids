@@ -1,10 +1,13 @@
 import * as THREE from "three";
-// import * as Stats from "stats.js";
+import * as Stats from "stats.js";
 import setup from "./setup";
 import changeBox from "./changeBox";
 
 const { startup } = wasm_bindgen;
 
+let threads: SharedArrayBuffer[] = [];
+let floatThreads: Float64Array[] = [];
+let meta: Int16Array[] = []; //[0] is the frame, [1] is the number of boids
 let sharedMemory = new SharedArrayBuffer(
 	new Float64Array(9000).byteLength + new Int8Array(1).byteLength
 );
@@ -239,38 +242,74 @@ let box = new THREE.Mesh(boxgeo, boxmat);
 
 scene.add(box);
 
+//function to create WebWorkers
+const startThreads = (boidCount: number) => {
+	//check if threads exist
+	if (floatThreads.length > 0) {
+		//set them to float64Array of 69s
+		for (let i = 0; i < floatThreads.length; i++) {
+			floatThreads[i].fill(69.0);
+		}
+		threads = [];
+		floatThreads = [];
+		meta = [];
+	}
+	//create threads
+	threads = startup(boidCount, settings);
+	threads.forEach((thread, i) => {
+		floatThreads.push(
+			new Float64Array(thread, 0, (thread.byteLength - 4) / 8) //-4 to remove the 4 byte metadata
+		);
+		meta.push(new Int16Array(thread, thread.byteLength - 4));
+	});
+	console.log(meta);
+};
 //animation loop
-
 wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
+	startThreads(settings.boidCount);
 	//spawn webworker
 	console.log(counter[0]);
-	let webWorker = startup(sharedMemory);
 	//create previous tick val
 	let prevTick: number;
 	let stats = new Stats();
 	document.body.appendChild(stats.dom);
-	renderer.setAnimationLoop(function () {
-		if (prevTick != counter[0]) {
-			stats.begin();
-			prevTick = counter[0];
-			boids.forEach((boid, i) => {
-				boid.position.x = f64Array[i * 9];
-				boid.position.y = f64Array[i * 9 + 1];
-				boid.position.z = f64Array[i * 9 + 2];
-				boid.vel.x = f64Array[i * 9 + 3];
-				boid.vel.y = f64Array[i * 9 + 4];
-				boid.vel.z = f64Array[i * 9 + 5];
-				boid.updateBoid();
-				//update sharedBufferArray positions
-				// f64Array[i * 9] = boid.position.x;
-				// f64Array[i * 9 + 1] = boid.position.y;
-				// f64Array[i * 9 + 2] = boid.position.z;
-			});
-			renderer.render(scene, camera);
-			stats.end();
-		} else {
-			//render so motion is more smooth based on user input
-			renderer.render(scene, camera);
+	let nextIndex = 0;
+	floatThreads.forEach((buf, i) => {
+		//buf is a float64Array of boid data
+		let beginIndex = nextIndex;
+		while (nextIndex - beginIndex < buf.length / 9) {
+			let index = nextIndex - beginIndex;
+			let boid = boids[nextIndex];
+			buf[index * 9] = boid.position.x;
+			buf[index * 9 + 1] = boid.position.y;
+			buf[index * 9 + 2] = boid.position.z;
+			buf[index * 9 + 6] = boid.home.x;
+			buf[index * 9 + 7] = boid.home.y;
+			buf[index * 9 + 8] = boid.home.z;
+			nextIndex++;
 		}
+		renderer.render(scene, camera);
+	});
+	renderer.setAnimationLoop(function () {
+		stats.begin();
+		let nextIndex = 0;
+		floatThreads.forEach((buf, i) => {
+			//buf is a float64Array of boid data
+			let beginIndex = nextIndex;
+			while (nextIndex - beginIndex < buf.length / 9) {
+				let index = nextIndex - beginIndex;
+				let boid = boids[nextIndex];
+				boid.position.x = buf[index * 9];
+				boid.position.y = buf[index * 9 + 1];
+				boid.position.z = buf[index * 9 + 2];
+				boid.vel.x = buf[index * 9 + 3];
+				boid.vel.y = buf[index * 9 + 4];
+				boid.vel.z = buf[index * 9 + 5];
+				boids[nextIndex].updateBoid();
+				nextIndex++;
+			}
+			renderer.render(scene, camera);
+		});
+		stats.end();
 	});
 });

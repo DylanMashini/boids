@@ -5,7 +5,7 @@ use web_sys::{console, Worker};
 // import Vector3
 #[path = "./Vector3.rs"]
 pub mod vector3_module;
-use js_sys::*;
+use js_sys;
 use vector3_module::Vector3;
 // import Boid
 #[path = "./Boid.rs"]
@@ -17,30 +17,42 @@ extern crate serde_derive;
 //declare startup function that spawns webworker
 #[wasm_bindgen]
 //replace with sharedmemory
-pub fn startup(buffer: &SharedArrayBuffer) -> Worker {
-    let mut web_worker = Worker::new("./worker.js");
-    match &mut web_worker {
-        Ok(worker) => {
-            console::log_1(&JsValue::from_str("Worker created"));
-            match worker.post_message(buffer) {
-                Ok(_) => {
-                    console::log_1(&JsValue::from_str("Buffer sent to worker"));
-                }
-                Err(e) => {
-                    console::log_1(&JsValue::from_str(&format!("Error: {:?}", e)));
-                }
-            };
-        }
-        Err(e) => {
-            console::log_1(&JsValue::from_str(&format!(
-                "Worker creation failed: {:?}",
-                e
-            )));
-            panic!("Worker creation failed: {:?}", e);
-        }
+pub fn startup(boid_count: i16, settings: &JsValue) -> Vec<js_sys::SharedArrayBuffer> {
+    console_error_panic_hook::set_once();
+    let window = web_sys::window().unwrap();
+    let navigator = window.navigator();
+    let mut max_threads: f64 = navigator.hardware_concurrency();
+    //min of 100 boids per thread
+    if (boid_count) / (max_threads as i16) < 100 {
+        //goal is to have <=100 boids per thread
+        max_threads = (((boid_count) as f32 / 100.0) as i16) as f64; //using as i16 rounds number down
     }
-    web_sys::console::log_1(&"spawned".into());
-    return web_worker.unwrap();
+    let mut count = 0.0;
+    let mut workers: Vec<Worker> = vec![];
+    let mut buffers: Vec<js_sys::SharedArrayBuffer> = vec![];
+    let jobs_per_worker = (boid_count) as i16 / max_threads as i16; // does not include boids that don't evenly divide
+    let mut extra_jobs = (boid_count) as i16 % max_threads as i16; //less than max_threads
+    while max_threads > count {
+        let thread_boids;
+        if extra_jobs > 0 {
+            thread_boids = jobs_per_worker + 1;
+            extra_jobs -= 1;
+        } else {
+            thread_boids = jobs_per_worker;
+        };
+        workers.push(Worker::new("./worker.js").unwrap()); //panics if creation fails
+        buffers.push(js_sys::SharedArrayBuffer::new(
+            (thread_boids as u32 * 8 * 9) + 4, //4 is for metadata, 8 is bytes per float, 9 is floats per boid
+        )); //creates new sharedArrayBuffer with 72 bytes per boid
+        workers[count as usize]
+            .post_message(&buffers[count as usize])
+            .unwrap(); //panics if sending fails
+        workers[count as usize].post_message(&settings).unwrap();
+        count += 1.0;
+    }
+    //return buffers
+    web_sys::console::log_1(&format!("{:?}", buffers).into());
+    return buffers;
 }
 
 #[derive(Clone)]

@@ -1,28 +1,13 @@
 importScripts("./pkg/boids_wasm.js");
 const { animate } = wasm_bindgen;
 
-console.log("within webworker");
-
-let settings = {
-	maxSpeed: 0.5,
-	maxForce: 0.03,
-	neighbohoodSize: 20,
-	boidCount: 1000,
-	boxSize: 200,
-	randomHome: true,
-	colorSeperation: false,
-	sphere: false,
-	highlight: false,
-};
-
-self.addEventListener("message", function handleMessageFromMain(msg) {
-	console.log("received message from main:", msg);
-
-	let sharedMemory = msg.data;
-	let floatBuffer = new Float64Array(sharedMemory, 0, settings.boidCount * 9);
-	let intBuffer = new Int8Array(sharedMemory, floatBuffer.byteLength);
+let settings;
+let sharedMemory;
+let floatBuffer;
+let metaBuffer;
+const run = () => {
 	wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
-		while (true) {
+		setInterval(() => {
 			let values = animate(
 				floatBuffer,
 				settings.maxSpeed,
@@ -32,16 +17,36 @@ self.addEventListener("message", function handleMessageFromMain(msg) {
 				settings.highlight
 			);
 			floatBuffer.set(values);
-			if (intBuffer[0] < 100) {
-				intBuffer[0]++;
+			if (metaBuffer[0] < 100) {
+				metaBuffer[0]++;
 			} else {
-				intBuffer[0] = 0;
+				metaBuffer[0] = 0;
 			}
-		}
-		// console.log(
-		// 	`x: ${floatBuffer[0]} y: ${floatBuffer[1]} z: ${floatBuffer[2]}`
-		// );
+		}, 20);
 	});
+};
+self.addEventListener("message", function handleMessageFromMain(msg) {
+	//will recive two messages, first will be a settings, second will be a buffer
+	if (msg.data.byteLength) {
+		//message is buffer
+		sharedMemory = msg.data;
+		floatBuffer = new Float64Array(
+			sharedMemory,
+			0,
+			(sharedMemory.byteLength - 4) / 8
+		);
+		metaBuffer = new Int16Array(sharedMemory, sharedMemory.byteLength - 4);
+		metaBuffer[0] = floatBuffer.length / 9;
+		if (settings) {
+			run();
+		}
+	} else {
+		//message is settings
+		settings = msg.data;
+		if (sharedMemory) {
+			run();
+		}
+	}
 });
 
 /*

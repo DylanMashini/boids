@@ -21,4 +21,6 @@ version = "0.3.4"
 features = [
     'console',
     'Worker',
+    'Navigator',
+    'Window'
 ]
