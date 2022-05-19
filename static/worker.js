@@ -22,7 +22,10 @@ const run = () => {
 			} else {
 				metaBuffer[0] = 0;
 			}
-		}, 20);
+			if (metaBuffer[1] == 69) {
+				close();
+			}
+		}, 0);
 	});
 };
 self.addEventListener("message", function handleMessageFromMain(msg) {

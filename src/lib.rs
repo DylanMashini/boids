@@ -23,9 +23,9 @@ pub fn startup(boid_count: i16, settings: &JsValue) -> Vec<js_sys::SharedArrayBu
     let navigator = window.navigator();
     let mut max_threads: f64 = navigator.hardware_concurrency();
     //min of 100 boids per thread
-    if (boid_count) / (max_threads as i16) < 100 {
+    if (boid_count) / (max_threads as i16) < 500 {
         //goal is to have <=100 boids per thread
-        max_threads = (((boid_count) as f32 / 100.0) as i16) as f64; //using as i16 rounds number down
+        max_threads = (((boid_count) as f32 / 500.0) as i16) as f64; //using as i16 rounds number down
     }
     let mut count = 0.0;
     let mut workers: Vec<Worker> = vec![];

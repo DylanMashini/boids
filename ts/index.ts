@@ -21,7 +21,7 @@ let settings = {
 	maxSpeed: 0.5,
 	maxForce: 0.03,
 	neighbohoodSize: 10,
-	boidCount: 2000,
+	boidCount: 1000,
 	boxSize: 200,
 	randomHome: true,
 	colorSeperation: false,
@@ -247,8 +247,9 @@ const startThreads = (boidCount: number) => {
 	//check if threads exist
 	if (floatThreads.length > 0) {
 		//set them to float64Array of 69s
-		for (let i = 0; i < floatThreads.length; i++) {
-			floatThreads[i].fill(69.0);
+		for (let i = 0; i < meta.length; i++) {
+			meta[i][0] = 69;
+			meta[i][1] = 69;
 		}
 		threads = [];
 		floatThreads = [];
