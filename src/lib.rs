@@ -187,7 +187,7 @@ pub fn animate(
         let mut home_force = boid.steer_to(&boid.home, settings.max_speed, settings.max_force);
         //basic homing
         // let mut home_force = boid.steer_to(&Vector3::new(0.0, 0.0, 0.0), settings.maxSpeed, 0.03);
-        home_force.multiply_scalar(1.3);
+        home_force.multiply_scalar(1 as f64 / 7 as f64); // was 1.3
         acceleration.sub(&home_force);
         final_boid.vel.add(&acceleration);
         final_boid.vel.clamp_length(0.0, settings.max_speed);
