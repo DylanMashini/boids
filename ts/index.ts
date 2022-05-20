@@ -8,11 +8,7 @@ const { startup } = wasm_bindgen;
 let threads: SharedArrayBuffer[] = [];
 let floatThreads: Float64Array[] = [];
 let meta: Int16Array[] = []; //[0] is the frame, [1] is the number of boids
-let sharedMemory = new SharedArrayBuffer(
-	new Float64Array(9000).byteLength + new Int8Array(1).byteLength
-);
-let f64Array = new Float64Array(sharedMemory, 0, 9000);
-let counter = new Int8Array(sharedMemory, f64Array.byteLength);
+
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 
@@ -217,18 +213,6 @@ export class boid extends THREE.Mesh {
 }
 
 const { scene, renderer, camera, boids } = setup(settings);
-//add boids to sharedBufferArray
-for (let i = 0; i < settings.boidCount; i++) {
-	f64Array[i * 9] = boids[i].position.x;
-	f64Array[i * 9 + 1] = boids[i].position.y;
-	f64Array[i * 9 + 2] = boids[i].position.z;
-	f64Array[i * 9 + 3] = boids[i].vel.x;
-	f64Array[i * 9 + 4] = boids[i].vel.y;
-	f64Array[i * 9 + 5] = boids[i].vel.z;
-	f64Array[i * 9 + 6] = boids[i].home.x;
-	f64Array[i * 9 + 7] = boids[i].home.y;
-	f64Array[i * 9 + 8] = boids[i].home.z;
-}
 
 let boxgeo: any = new THREE.BoxGeometry(
 	settings.boxSize,
@@ -268,8 +252,6 @@ const startThreads = (boidCount: number) => {
 //animation loop
 wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
 	startThreads(settings.boidCount);
-	//spawn webworker
-	console.log(counter[0]);
 	//create previous tick val
 	let prevTick: number;
 	let stats = new Stats();
