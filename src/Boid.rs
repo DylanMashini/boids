@@ -84,6 +84,6 @@ impl Boid {
             arr.push(boid.home.y);
             arr.push(boid.home.z);
         }
-        return arr;
+        arr
     }
 }

@@ -14,25 +14,39 @@ use boid_module::Boid;
 #[macro_use]
 extern crate serde_derive;
 
+#[derive(Serialize, Deserialize)]
+struct ThreadScope {
+    index_start: i16,
+    index_end: i16,
+    boid_count: i16,
+}
 //declare startup function that spawns webworker
 #[wasm_bindgen]
 //replace with sharedmemory
-pub fn startup(boid_count: i16, settings: &JsValue) -> Vec<js_sys::SharedArrayBuffer> {
+pub fn startup(
+    boid_count: i16,
+    settings: &JsValue,
+    hardware_concurrency_max: f64,
+) -> js_sys::SharedArrayBuffer {
     console_error_panic_hook::set_once();
-    let window = web_sys::window().unwrap();
-    let navigator = window.navigator();
-    let mut max_threads: f64 = navigator.hardware_concurrency();
+    let mut max_threads: f64 = hardware_concurrency_max;
     //min of 100 boids per thread
-    if (boid_count) / (max_threads as i16) < 500 {
+    if (boid_count) / (max_threads as i16) < 100 {
         //goal is to have <=100 boids per thread
-        max_threads = (((boid_count) as f32 / 500.0) as i16) as f64; //using as i16 rounds number down
+        max_threads = (((boid_count) as f32 / 100.0) as i16) as f64; //using as i16 rounds number down
+        if max_threads == 0.0 {
+            //make sure we aren't creating 0 threads
+            max_threads = 1.0;
+        }
     }
-    let mut count = 0.0;
+    let mut count = 0;
     let mut workers: Vec<Worker> = vec![];
-    let mut buffers: Vec<js_sys::SharedArrayBuffer> = vec![];
+    let buffer: js_sys::SharedArrayBuffer =
+        js_sys::SharedArrayBuffer::new((boid_count as u32 * 8 * 9) + 4);
     let jobs_per_worker = (boid_count) as i16 / max_threads as i16; // does not include boids that don't evenly divide
     let mut extra_jobs = (boid_count) as i16 % max_threads as i16; //less than max_threads
-    while max_threads > count {
+    let mut last_index = 0;
+    while max_threads > count as f64 {
         let thread_boids;
         if extra_jobs > 0 {
             thread_boids = jobs_per_worker + 1;
@@ -41,18 +55,20 @@ pub fn startup(boid_count: i16, settings: &JsValue) -> Vec<js_sys::SharedArrayBu
             thread_boids = jobs_per_worker;
         };
         workers.push(Worker::new("./worker.js").unwrap()); //panics if creation fails
-        buffers.push(js_sys::SharedArrayBuffer::new(
-            (thread_boids as u32 * 8 * 9) + 4, //4 is for metadata, 8 is bytes per float, 9 is floats per boid
-        )); //creates new sharedArrayBuffer with 72 bytes per boid
-        workers[count as usize]
-            .post_message(&buffers[count as usize])
-            .unwrap(); //panics if sending fails
+        workers[count as usize].post_message(&buffer).unwrap(); //panics if sending fails
         workers[count as usize].post_message(&settings).unwrap();
-        count += 1.0;
+        let info = ThreadScope {
+            index_start: last_index,
+            index_end: last_index + thread_boids,
+            boid_count: boid_count,
+        };
+        workers[count as usize]
+            .post_message(&JsValue::from_serde(&info).unwrap())
+            .unwrap(); //sends json as post message with fields: indexStart, indexEnd, boidCount
+        last_index += thread_boids;
+        count += 1;
     }
-    //return buffers
-    web_sys::console::log_1(&format!("{:?}", buffers).into());
-    return buffers;
+    return buffer;
 }
 
 #[derive(Clone)]
@@ -85,6 +101,8 @@ impl Settings {
 #[wasm_bindgen]
 pub fn animate(
     boids_obj: &[f64],
+    min_index: u16,
+    max_index: u16,
     max_speed: f64,
     max_force: f64,
     neighbohood_size: f64,
@@ -103,10 +121,13 @@ pub fn animate(
     //convert JsValue to Vec<Vector3>
     //this is vector of Vector3 of boid positions
     let boids = Boid::new_from_f64_array(boids_obj);
+    let assigned_boids = Boid::new_from_f64_array(
+        &boids_obj[(min_index as u32 * 9) as usize..(max_index as u32 * 9) as usize],
+    );
+    // Boid::new_from_f64_array(&boids_obj[(min_index * 9) as usize..(max_index * 9) as usize]);
     let mut near_boids: Vec<Boid> = vec![];
     let mut highlight_vectors: Vec<i16> = vec![];
-
-    for (i, boid) in boids.iter().enumerate() {
+    for (i, boid) in assigned_boids.iter().enumerate() {
         let mut seperation_sum = Vector3::new(0.0, 0.0, 0.0);
         let mut seperation_count = 0.0;
         let mut alignment_sum = Vector3::new(0.0, 0.0, 0.0);
@@ -200,16 +221,17 @@ pub fn animate(
         near_boids.push(final_boid);
     }
     let final_boids = Boid::to_f64_arr(near_boids);
-    if final_boids.len() != boids_obj.len() {
+    if final_boids.len() as u32 != (max_index as u32 - min_index as u32) * 9 {
         console::log_1(
             &format!(
                 "boids length not equal {} != {}",
                 final_boids.len(),
-                boids_obj.len(),
+                (max_index as u32 - min_index as u32) * 9,
             )
             .into(),
         );
         panic!("boids length not equal");
     }
+    // return final_boids; //list of our assigned boids
     return final_boids;
 }

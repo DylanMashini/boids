@@ -3,11 +3,13 @@ import * as Stats from "stats.js";
 import setup from "./setup";
 import changeBox from "./changeBox";
 
+// @ts-ignore
 const { startup } = wasm_bindgen;
 
-let threads: SharedArrayBuffer[] = [];
-let floatThreads: Float64Array[] = [];
-let meta: Int16Array[] = []; //[0] is the frame, [1] is the number of boids
+let maxThreads = window.navigator.hardwareConcurrency || 4;
+let sharedMemory: SharedArrayBuffer;
+let floatThreads: Float64Array;
+let meta: Int16Array; //[0] is the frame, [1] is for closing the threads
 
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
@@ -123,6 +125,8 @@ form.addEventListener("submit", e => {
 	settings["colorSeperation"] = form["color"].checked;
 
 	settings["boidCount"] = Number(form["boidCount"].value);
+
+	startThreads(settings.boidCount, maxThreads);
 });
 
 export class boid extends THREE.Mesh {
@@ -227,72 +231,60 @@ let box = new THREE.Mesh(boxgeo, boxmat);
 scene.add(box);
 
 //function to create WebWorkers
-const startThreads = (boidCount: number) => {
+const startThreads = (boidCount: number, maxThreads: number) => {
 	//check if threads exist
-	if (floatThreads.length > 0) {
+	if (floatThreads) {
+		executionPaused = true;
 		//set them to float64Array of 69s
-		for (let i = 0; i < meta.length; i++) {
-			meta[i][0] = 69;
-			meta[i][1] = 69;
-		}
-		threads = [];
-		floatThreads = [];
-		meta = [];
+		meta[0] = 69;
+		meta[1] = 69;
+		sharedMemory = undefined;
+		floatThreads = undefined;
+		meta = undefined;
 	}
-	//create threads
-	threads = startup(boidCount, settings);
-	threads.forEach((thread, i) => {
-		floatThreads.push(
-			new Float64Array(thread, 0, (thread.byteLength - 4) / 8) //-4 to remove the 4 byte metadata
-		);
-		meta.push(new Int16Array(thread, thread.byteLength - 4));
+
+	sharedMemory = startup(boidCount, settings, maxThreads);
+	floatThreads = new Float64Array(
+		sharedMemory,
+		0,
+		(sharedMemory.byteLength - 4) / 8
+	); //-4 to remove the 4 byte metadata
+	meta = new Int16Array(sharedMemory, sharedMemory.byteLength - 4);
+	boids.forEach((boid, i) => {
+		floatThreads[i * 9] = boid.position.x;
+		floatThreads[i * 9 + 1] = boid.position.y;
+		floatThreads[i * 9 + 2] = boid.position.z;
+		floatThreads[i * 9 + 3] = boid.vel.x;
+		floatThreads[i * 9 + 4] = boid.vel.y;
+		floatThreads[i * 9 + 5] = boid.vel.z;
+		floatThreads[i * 9 + 6] = boid.home.x;
+		floatThreads[i * 9 + 7] = boid.home.y;
+		floatThreads[i * 9 + 8] = boid.home.z;
 	});
-	console.log(meta);
+	executionPaused = false;
 };
+let executionPaused = false;
 //animation loop
+// @ts-ignore
 wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
-	startThreads(settings.boidCount);
+	startThreads(settings.boidCount, maxThreads);
 	//create previous tick val
-	let prevTick: number;
 	let stats = new Stats();
 	document.body.appendChild(stats.dom);
-	let nextIndex = 0;
-	floatThreads.forEach((buf, i) => {
-		//buf is a float64Array of boid data
-		let beginIndex = nextIndex;
-		while (nextIndex - beginIndex < buf.length / 9) {
-			let index = nextIndex - beginIndex;
-			let boid = boids[nextIndex];
-			buf[index * 9] = boid.position.x;
-			buf[index * 9 + 1] = boid.position.y;
-			buf[index * 9 + 2] = boid.position.z;
-			buf[index * 9 + 6] = boid.home.x;
-			buf[index * 9 + 7] = boid.home.y;
-			buf[index * 9 + 8] = boid.home.z;
-			nextIndex++;
-		}
-		renderer.render(scene, camera);
-	});
 	renderer.setAnimationLoop(function () {
-		stats.begin();
-		let nextIndex = 0;
-		floatThreads.forEach((buf, i) => {
-			//buf is a float64Array of boid data
-			let beginIndex = nextIndex;
-			while (nextIndex - beginIndex < buf.length / 9) {
-				let index = nextIndex - beginIndex;
-				let boid = boids[nextIndex];
-				boid.position.x = buf[index * 9];
-				boid.position.y = buf[index * 9 + 1];
-				boid.position.z = buf[index * 9 + 2];
-				boid.vel.x = buf[index * 9 + 3];
-				boid.vel.y = buf[index * 9 + 4];
-				boid.vel.z = buf[index * 9 + 5];
-				boids[nextIndex].updateBoid();
-				nextIndex++;
-			}
+		if (!executionPaused) {
+			stats.begin();
+			boids.forEach((_, i) => {
+				boids[i].position.x = floatThreads[i * 9];
+				boids[i].position.y = floatThreads[i * 9 + 1];
+				boids[i].position.z = floatThreads[i * 9 + 2];
+				boids[i].vel.x = floatThreads[i * 9 + 3];
+				boids[i].vel.y = floatThreads[i * 9 + 4];
+				boids[i].vel.z = floatThreads[i * 9 + 5];
+				boids[i].updateBoid();
+			});
 			renderer.render(scene, camera);
-		});
-		stats.end();
+			stats.end();
+		}
 	});
 });
