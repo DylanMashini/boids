@@ -15,9 +15,9 @@ fi
 # Build main dir
 rm -rf dist
 wasm-pack build --target no-modules
+webpack --config ./webpack.config.js --mode production
 mkdir dist
 cp -rp ./pkg ./dist/pkg
-webpack --config ./webpack.config.js --mode production 
 ncp ./static ./dist 
 tsc ./dist/worker.ts
 rm -rf ./dist/worker.ts
