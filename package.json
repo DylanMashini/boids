@@ -11,7 +11,7 @@
     },
     "scripts": {
         "dev": "./build.sh && node start.js & open http://locahost:3000/",
-        "build": "yarn exec build.sh"
+        "build": "yarn exec ./build.sh"
     },
     "devDependencies": {
         "@types/three": "^0.140.0",
