@@ -4,6 +4,8 @@
 if ! command -v cargo &> /dev/null
 then
     curl https://sh.rustup.rs -sSf | sh
+    rustup install stable
+    rustup default stable
 fi
 # Install wasm-pack
 if ! command -v wasm-pack &> /dev/null
