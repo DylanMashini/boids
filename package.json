@@ -11,7 +11,7 @@
     },
     "scripts": {
         "dev": "./build.sh && node start.js & open http://locahost:3000/",
-        "build": "wasm-pack build && webpack --config ./webpack.config.js --mode production && ncp ./static ./dist && tsc ./dist/worker.ts && rm ./dist/worker.ts"
+        "build": "yarn exec build.sh"
     },
     "devDependencies": {
         "@types/three": "^0.140.0",
