@@ -1,5 +1,5 @@
 #!/bin/sh
-
+set -o verbose
 # install rust toolchain
 if ! command -v cargo &> /dev/null
 then
