@@ -1,11 +1,7 @@
 use wasm_bindgen::prelude::*;
-extern crate console_error_panic_hook;
-//import webworker and console from web_sys
-use web_sys::{console, Worker};
 // import Vector3
 #[path = "./Vector3.rs"]
 pub mod vector3_module;
-use js_sys;
 use vector3_module::Vector3;
 // import Boid
 #[path = "./Boid.rs"]
@@ -13,63 +9,6 @@ pub mod boid_module;
 use boid_module::Boid;
 #[macro_use]
 extern crate serde_derive;
-
-#[derive(Serialize, Deserialize)]
-struct ThreadScope {
-    index_start: i16,
-    index_end: i16,
-    boid_count: i16,
-}
-//declare startup function that spawns webworker
-#[wasm_bindgen]
-//replace with sharedmemory
-pub fn startup(
-    boid_count: i16,
-    settings: &JsValue,
-    hardware_concurrency_max: f64,
-) -> js_sys::SharedArrayBuffer {
-    console_error_panic_hook::set_once();
-    let mut max_threads: f64 = hardware_concurrency_max;
-    //min of 100 boids per thread
-    if (boid_count) / (max_threads as i16) < 100 {
-        //goal is to have <=100 boids per thread
-        max_threads = (((boid_count) as f32 / 100.0) as i16) as f64; //using as i16 rounds number down
-        if max_threads == 0.0 {
-            //make sure we aren't creating 0 threads
-            max_threads = 1.0;
-        }
-    }
-    let mut count = 0;
-    let mut workers: Vec<Worker> = vec![];
-    let buffer: js_sys::SharedArrayBuffer =
-        js_sys::SharedArrayBuffer::new((boid_count as u32 * 8 * 9) + 4);
-    let jobs_per_worker = (boid_count) as i16 / max_threads as i16; // does not include boids that don't evenly divide
-    let mut extra_jobs = (boid_count) as i16 % max_threads as i16; //less than max_threads
-    let mut last_index = 0;
-    while max_threads > count as f64 {
-        let thread_boids;
-        if extra_jobs > 0 {
-            thread_boids = jobs_per_worker + 1;
-            extra_jobs -= 1;
-        } else {
-            thread_boids = jobs_per_worker;
-        };
-        workers.push(Worker::new("./worker.js").unwrap()); //panics if creation fails
-        workers[count as usize].post_message(&buffer).unwrap(); //panics if sending fails
-        workers[count as usize].post_message(&settings).unwrap();
-        let info = ThreadScope {
-            index_start: last_index,
-            index_end: last_index + thread_boids,
-            boid_count: boid_count,
-        };
-        workers[count as usize]
-            .post_message(&JsValue::from_serde(&info).unwrap())
-            .unwrap(); //sends json as post message with fields: indexStart, indexEnd, boidCount
-        last_index += thread_boids;
-        count += 1;
-    }
-    return buffer;
-}
 
 #[derive(Clone)]
 #[wasm_bindgen]
@@ -100,16 +39,13 @@ impl Settings {
 
 #[wasm_bindgen]
 pub fn animate(
-    boids_obj: &[f64],
-    min_index: u16,
-    max_index: u16,
+    boids_obj: &JsValue,
     max_speed: f64,
     max_force: f64,
     neighbohood_size: f64,
     color_seperation: bool,
     highlight: bool,
-) -> Vec<f64> {
-    console_error_panic_hook::set_once();
+) -> JsValue {
     //tempararily use default settings
     let settings = Settings::new(
         max_speed,
@@ -120,14 +56,11 @@ pub fn animate(
     );
     //convert JsValue to Vec<Vector3>
     //this is vector of Vector3 of boid positions
-    let boids = Boid::new_from_f64_array(boids_obj);
-    let assigned_boids = Boid::new_from_f64_array(
-        &boids_obj[(min_index as u32 * 9) as usize..(max_index as u32 * 9) as usize],
-    );
-    // Boid::new_from_f64_array(&boids_obj[(min_index * 9) as usize..(max_index * 9) as usize]);
+    let boids: Vec<Boid> = boids_obj.into_serde().unwrap();
     let mut near_boids: Vec<Boid> = vec![];
     let mut highlight_vectors: Vec<i16> = vec![];
-    for (i, boid) in assigned_boids.iter().enumerate() {
+
+    for (i, boid) in boids.iter().enumerate() {
         let mut seperation_sum = Vector3::new(0.0, 0.0, 0.0);
         let mut seperation_count = 0.0;
         let mut alignment_sum = Vector3::new(0.0, 0.0, 0.0);
@@ -208,7 +141,7 @@ pub fn animate(
         let mut home_force = boid.steer_to(&boid.home, settings.max_speed, settings.max_force);
         //basic homing
         // let mut home_force = boid.steer_to(&Vector3::new(0.0, 0.0, 0.0), settings.maxSpeed, 0.03);
-        home_force.multiply_scalar(1 as f64 / 7 as f64); // was 1.3
+        home_force.multiply_scalar(1.3);
         acceleration.sub(&home_force);
         final_boid.vel.add(&acceleration);
         final_boid.vel.clamp_length(0.0, settings.max_speed);
@@ -217,21 +150,7 @@ pub fn animate(
         } else {
             final_boid.highlight = false
         }
-        final_boid.pos.add(&final_boid.vel);
         near_boids.push(final_boid);
     }
-    let final_boids = Boid::to_f64_arr(near_boids);
-    if final_boids.len() as u32 != (max_index as u32 - min_index as u32) * 9 {
-        console::log_1(
-            &format!(
-                "boids length not equal {} != {}",
-                final_boids.len(),
-                (max_index as u32 - min_index as u32) * 9,
-            )
-            .into(),
-        );
-        panic!("boids length not equal");
-    }
-    // return final_boids; //list of our assigned boids
-    return final_boids;
+    return JsValue::from_serde(&near_boids).unwrap();
 }

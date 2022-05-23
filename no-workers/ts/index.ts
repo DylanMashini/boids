@@ -2,15 +2,7 @@ import * as THREE from "three";
 import * as Stats from "stats.js";
 import setup from "./setup";
 import changeBox from "./changeBox";
-
-// @ts-ignore
-const { startup } = wasm_bindgen;
-
-let maxThreads = window.navigator.hardwareConcurrency || 4;
-let sharedMemory: SharedArrayBuffer;
-let floatThreads: Float64Array;
-let meta: Int16Array; //[0] is the frame, [1] is for closing the threads
-
+const wasm = import("../pkg/boids_wasm");
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 
@@ -18,7 +10,7 @@ const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 let settings = {
 	maxSpeed: 0.5,
 	maxForce: 0.03,
-	neighbohoodSize: 10,
+	neighbohoodSize: 20,
 	boidCount: 1000,
 	boxSize: 200,
 	randomHome: true,
@@ -125,8 +117,6 @@ form.addEventListener("submit", e => {
 	settings["colorSeperation"] = form["color"].checked;
 
 	settings["boidCount"] = Number(form["boidCount"].value);
-
-	startThreads(settings.boidCount, maxThreads);
 });
 
 export class boid extends THREE.Mesh {
@@ -168,10 +158,10 @@ export class boid extends THREE.Mesh {
 			this.material.color.setHex(colorList[this.group]);
 		}
 		if (this.vel.x == 0) {
-			// console.log(this.vel);
+			console.log(this.vel);
 		}
 		//update the position with the velocity
-		// this.position.add(this.vel);
+		this.position.add(this.vel);
 		//set the rotation
 		this.quaternion.setFromUnitVectors(
 			new THREE.Vector3(0, 1, 0),
@@ -217,7 +207,6 @@ export class boid extends THREE.Mesh {
 }
 
 const { scene, renderer, camera, boids } = setup(settings);
-
 let boxgeo: any = new THREE.BoxGeometry(
 	settings.boxSize,
 	settings.boxSize,
@@ -230,61 +219,48 @@ let box = new THREE.Mesh(boxgeo, boxmat);
 
 scene.add(box);
 
-//function to create WebWorkers
-const startThreads = (boidCount: number, maxThreads: number) => {
-	//check if threads exist
-	if (floatThreads) {
-		executionPaused = true;
-		//set them to float64Array of 69s
-		meta[0] = 69;
-		meta[1] = 69;
-		sharedMemory = undefined;
-		floatThreads = undefined;
-		meta = undefined;
-	}
-
-	sharedMemory = startup(boidCount, settings, maxThreads);
-	floatThreads = new Float64Array(
-		sharedMemory,
-		0,
-		(sharedMemory.byteLength - 4) / 8
-	); //-4 to remove the 4 byte metadata
-	meta = new Int16Array(sharedMemory, sharedMemory.byteLength - 4);
-	boids.forEach((boid, i) => {
-		floatThreads[i * 9] = boid.position.x;
-		floatThreads[i * 9 + 1] = boid.position.y;
-		floatThreads[i * 9 + 2] = boid.position.z;
-		floatThreads[i * 9 + 3] = boid.vel.x;
-		floatThreads[i * 9 + 4] = boid.vel.y;
-		floatThreads[i * 9 + 5] = boid.vel.z;
-		floatThreads[i * 9 + 6] = boid.home.x;
-		floatThreads[i * 9 + 7] = boid.home.y;
-		floatThreads[i * 9 + 8] = boid.home.z;
-	});
-	executionPaused = false;
-};
-let executionPaused = false;
 //animation loop
-// @ts-ignore
-wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
-	startThreads(settings.boidCount, maxThreads);
-	//create previous tick val
-	let stats = new Stats();
+wasm.then(module => {
+	const stats = new Stats();
+	stats.showPanel(0);
 	document.body.appendChild(stats.dom);
 	renderer.setAnimationLoop(function () {
-		if (!executionPaused) {
-			stats.begin();
-			boids.forEach((_, i) => {
-				boids[i].position.x = floatThreads[i * 9];
-				boids[i].position.y = floatThreads[i * 9 + 1];
-				boids[i].position.z = floatThreads[i * 9 + 2];
-				boids[i].vel.x = floatThreads[i * 9 + 3];
-				boids[i].vel.y = floatThreads[i * 9 + 4];
-				boids[i].vel.z = floatThreads[i * 9 + 5];
-				boids[i].updateBoid();
-			});
-			renderer.render(scene, camera);
-			stats.end();
-		}
+		stats.begin();
+		renderer.render(scene, camera);
+		let updatedBoids = module.animate(
+			boids.map(boid => {
+				return {
+					vel: { x: boid.vel.x, y: boid.vel.y, z: boid.vel.z },
+					pos: {
+						x: boid.position.x,
+						y: boid.position.y,
+						z: boid.position.z,
+					},
+					home: { x: 0, y: 0, z: 0 },
+					quaternion: {
+						_x: boid.quaternion.x,
+						_y: boid.quaternion.y,
+						_z: boid.quaternion.z,
+						_w: boid.quaternion.w,
+					},
+					highlight: boid.highlight,
+				};
+			}),
+			settings.maxSpeed,
+			settings.maxForce,
+			settings.neighbohoodSize,
+			settings.colorSeperation,
+			settings.highlight
+		);
+		boids.forEach((boid, i) => {
+			boids[i].vel.set(
+				updatedBoids[i].vel.x,
+				updatedBoids[i].vel.y,
+				updatedBoids[i].vel.z
+			);
+			boids[i].highlight = updatedBoids[i].highlight;
+			boids[i].updateBoid();
+		});
+		stats.end();
 	});
 });

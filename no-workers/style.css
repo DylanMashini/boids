@@ -1,0 +1,41 @@
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+canvas {
+  position: fixed;
+  top:0;
+  left:0;
+}
+.settings {
+  /* outline: black;
+  outline-width: 5px;
+  outline-style: solid; */
+  position:fixed;
+  right:0;
+  top:0;
+  height: 80vh;
+  width: 20vw;
+}
+
+.form {
+  margin-top: 4vh;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.github-wrapper {
+  position:fixed;
+  right:1vw;
+  bottom: 2vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
