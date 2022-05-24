@@ -14,6 +14,7 @@ use boid_module::Boid;
 #[macro_use]
 extern crate serde_derive;
 
+// Struct that gets passed with serde to tell worker what boids it needs to manage
 #[derive(Serialize, Deserialize)]
 struct ThreadScope {
     index_start: i16,
@@ -23,7 +24,7 @@ struct ThreadScope {
 //declare startup function that spawns webworker
 #[wasm_bindgen]
 //replace with sharedmemory
-pub fn startup(
+pub fn initialize(
     boid_count: i16,
     settings: &JsValue,
     hardware_concurrency_max: f64,
@@ -42,7 +43,7 @@ pub fn startup(
     let mut count = 0;
     let mut workers: Vec<Worker> = vec![];
     let buffer: js_sys::SharedArrayBuffer =
-        js_sys::SharedArrayBuffer::new((boid_count as u32 * 8 * 9) + 4);
+        js_sys::SharedArrayBuffer::new((boid_count as u32 * 8 * 9) + 4); //creates buffer with len of boid_count floatArr + 4 bytes for metadata
     let jobs_per_worker = (boid_count) as i16 / max_threads as i16; // does not include boids that don't evenly divide
     let mut extra_jobs = (boid_count) as i16 % max_threads as i16; //less than max_threads
     let mut last_index = 0;
@@ -118,13 +119,9 @@ pub fn animate(
         color_seperation,
         highlight,
     );
-    //convert JsValue to Vec<Vector3>
-    //this is vector of Vector3 of boid positions
-    let boids = Boid::new_from_f64_array(boids_obj);
-    let assigned_boids = Boid::new_from_f64_array(
-        &boids_obj[(min_index as u32 * 9) as usize..(max_index as u32 * 9) as usize],
-    );
-    // Boid::new_from_f64_array(&boids_obj[(min_index * 9) as usize..(max_index * 9) as usize]);
+    let boids: Vec<Boid> = Boid::new_from_f64_array(boids_obj); // Creates Vec<Boid> for all boids
+    let assigned_boids = boids.clone()[min_index as usize..max_index as usize].to_vec(); //creates Vec<Boid> for boids in thread
+                                                                                         // Boid::new_from_f64_array(&boids_obj[(min_index * 9) as usize..(max_index * 9) as usize]);
     let mut near_boids: Vec<Boid> = vec![];
     let mut highlight_vectors: Vec<i16> = vec![];
     for (i, boid) in assigned_boids.iter().enumerate() {

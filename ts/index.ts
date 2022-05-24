@@ -4,7 +4,7 @@ import setup from "./setup";
 import changeBox from "./changeBox";
 
 // @ts-ignore
-const { startup } = wasm_bindgen;
+const { initialize } = wasm_bindgen;
 
 let maxThreads = window.navigator.hardwareConcurrency || 4;
 let sharedMemory: SharedArrayBuffer;
@@ -244,7 +244,7 @@ const startThreads = (boidCount: number, maxThreads: number) => {
 		meta = undefined;
 	}
 
-	sharedMemory = startup(boidCount, settings, maxThreads);
+	sharedMemory = initialize(boidCount, settings, maxThreads);
 	floatThreads = new Float64Array(
 		sharedMemory,
 		0,
