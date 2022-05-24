@@ -26,6 +26,7 @@ let settings = {
 	sphere: false,
 	highlight: false,
 };
+
 //get html form
 const form = document.querySelector("form")!;
 //setup inital form values
