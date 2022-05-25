@@ -121,7 +121,6 @@ pub fn animate(
     );
     let boids: Vec<Boid> = Boid::new_from_f64_array(boids_obj); // Creates Vec<Boid> for all boids
     let assigned_boids = boids.clone()[min_index as usize..max_index as usize].to_vec(); //creates Vec<Boid> for boids in thread
-                                                                                         // Boid::new_from_f64_array(&boids_obj[(min_index * 9) as usize..(max_index * 9) as usize]);
     let mut near_boids: Vec<Boid> = vec![];
     let mut highlight_vectors: Vec<i16> = vec![];
     for (i, boid) in assigned_boids.iter().enumerate() {
