@@ -61,7 +61,7 @@ pub fn initialize(
         let info = ThreadScope {
             index_start: last_index,
             index_end: last_index + thread_boids,
-            boid_count: boid_count,
+            boid_count,
         };
         workers[count as usize]
             .post_message(&JsValue::from_serde(&info).unwrap())
@@ -94,7 +94,7 @@ impl Settings {
             max_force,
             neighbohood_size,
             _color_seperation: color_seperation,
-            highlight: highlight,
+            highlight,
         }
     }
 }
