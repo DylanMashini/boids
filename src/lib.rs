@@ -30,7 +30,7 @@ pub fn initialize(
     hardware_concurrency_max: f64,
 ) -> js_sys::SharedArrayBuffer {
     console_error_panic_hook::set_once();
-    let mut max_threads: f64 = hardware_concurrency_max;
+    let mut max_threads: f64 = hardware_concurrency_max; //redeclare as mutable var because we need to modify this to limit it to 100 boids a thread
     //min of 100 boids per thread
     if (boid_count) / (max_threads as i16) < 100 {
         //goal is to have <=100 boids per thread
@@ -40,7 +40,7 @@ pub fn initialize(
             max_threads = 1.0;
         }
     }
-    let mut count = 0;
+    let mut count = 0; //used to iterate through all threads
     let mut workers: Vec<Worker> = vec![];
     let buffer: js_sys::SharedArrayBuffer =
         js_sys::SharedArrayBuffer::new((boid_count as u32 * 8 * 9) + 4); //creates buffer with len of boid_count floatArr + 4 bytes for metadata
@@ -55,9 +55,10 @@ pub fn initialize(
         } else {
             thread_boids = jobs_per_worker;
         };
-        workers.push(Worker::new("./worker.js").unwrap()); //panics if creation fails
-        workers[count as usize].post_message(&buffer).unwrap(); //panics if sending fails
-        workers[count as usize].post_message(&settings).unwrap();
+        workers.push(Worker::new("./worker.js").unwrap()); //creates thread and panics if thread creation fails
+        workers[count as usize].post_message(&buffer).unwrap(); // sends thread buffer
+        workers[count as usize].post_message(&settings).unwrap(); //sends thread settings object from main thread
+                                                                
         let info = ThreadScope {
             index_start: last_index,
             index_end: last_index + thread_boids,
