@@ -16,6 +16,7 @@
     "devDependencies": {
         "@types/three": "^0.140.0",
         "ts-loader": "^9.3.0",
-        "typescript": "^4.6.4"
+        "typescript": "^4.6.4",
+        "webpack-dev-server": "^4.9.0"
     }
 }
