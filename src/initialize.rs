@@ -1,3 +1,14 @@
+use wasm_bindgen::prelude::*;
+use web_sys::Worker;
+
+// Struct that gets passed with serde to tell worker what boids it needs to manage
+#[derive(Serialize, Deserialize)]
+struct ThreadScope {
+    index_start: i16,
+    index_end: i16,
+    boid_count: i16,
+}
+
 //declare startup function that spawns webworker
 #[wasm_bindgen]
 pub fn initialize(
