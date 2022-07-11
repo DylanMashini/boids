@@ -4,6 +4,7 @@ use super::vector3_module::Vector3;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Copy)]
 #[wasm_bindgen]
+
 pub struct Boid {
     pub vel: Vector3,
     //position of boid as vector

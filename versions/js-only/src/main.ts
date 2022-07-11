@@ -6,6 +6,7 @@ import Stats from "stats.js";
 
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
+
 //set default settings
 let settings = {
 	maxSpeed: 0.5,
