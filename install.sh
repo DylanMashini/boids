@@ -4,7 +4,7 @@ set -o verbose
 # install rust toolchain
 if ! command -v cargo &> /dev/null
 then
-    curl https://sh.rustup.rs -sSf | sh
+    curl https://sh.rustup.rs -sSf | sh -- -y
     rustup install stable
     rustup default stable
 fi
