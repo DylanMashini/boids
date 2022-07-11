@@ -15,8 +15,6 @@ extern crate serde_derive;
 //use initilization function from initialize.rs
 mod initialize;
 
-//replace with sharedmemory
-
 #[derive(Clone)]
 #[wasm_bindgen]
 pub struct Settings {

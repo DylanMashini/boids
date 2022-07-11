@@ -5,7 +5,28 @@ import changeBox from "./changeBox";
 const wasm = import("../pkg/boids_wasm");
 //list of colors to randomly choose
 const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
-
+// Check if wasm is supported
+const WASMsupported = (() => {
+	try {
+		if (
+			typeof WebAssembly === "object" &&
+			typeof WebAssembly.instantiate === "function"
+		) {
+			const module = new WebAssembly.Module(
+				Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00)
+			);
+			if (module instanceof WebAssembly.Module)
+				return (
+					new WebAssembly.Instance(module) instanceof
+					WebAssembly.Instance
+				);
+		}
+	} catch (e) {}
+	return false;
+})();
+if (!WASMsupported) {
+	window.location.href = "https://boids.dylanmashini.com/js-only";
+}
 //set default settings
 let settings = {
 	maxSpeed: 0.5,
