@@ -1,7 +1,7 @@
 import "./style.css";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
+import { VRButton } from "three/examples/jsm/webxr/VRButton";
 import Stats from "stats.js";
 
 //list of colors to randomly choose
