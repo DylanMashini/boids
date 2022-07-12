@@ -4,8 +4,7 @@
 	"pipeline": {
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": ["dist/**"],
-			"inputs": ["**/*.{js,jsx,ts,tsx,.rs,.toml,.sh,.json}"]
+			"outputs": ["dist/**"]
 		},
 		"test": {
 			"dependsOn": ["build"],
