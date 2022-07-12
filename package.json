@@ -1,22 +1,21 @@
 {
-    "dependencies": {
-        "@types/stats.js": "^0.17.0",
-        "express": "^4.18.1",
-        "ncp": "^2.0.0",
-        "stats.js": "^0.17.0",
-        "three": "^0.140.1",
-        "wasm-server": "^0.0.4",
-        "webpack": "^5.72.0",
-        "webpack-cli": "^4.9.2"
-    },
-    "scripts": {
-        "dev": "yarn exec ./dev.sh",
-        "build": "yarn exec ./build.sh"
-    },
-    "devDependencies": {
-        "@types/three": "^0.140.0",
-        "ts-loader": "^9.3.0",
-        "typescript": "^4.6.4",
-        "webpack-dev-server": "^4.9.0"
-    }
+	"name": "boids",
+	"version": "1.0.0",
+	"repository": "https://github.com/DylanMashini/boids.git",
+	"author": "DylanMashini <dylanmashini123@gmail.com>",
+	"license": "MIT",
+	"private": true,
+	"workspaces": [
+		"versions/*"
+	],
+	"devDependencies": {
+		"turbo": "^1.3.1"
+	},
+	"scripts": {
+		"build": "turbo run build deploy",
+		"test": "turbo test",
+		"dev": "turbo run dev",
+		"deploy": "turbo run deploy",
+		"install": "yarn exec ./install.sh"
+	}
 }

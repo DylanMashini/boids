@@ -34,6 +34,7 @@ let settings = {
 
 //get html form
 const form = document.querySelector("form")!;
+
 //setup inital form values
 form["maxSpeed"].value = String(settings["maxSpeed"]);
 form["maxForce"].value = String(settings["maxForce"]);
