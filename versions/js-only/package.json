@@ -4,8 +4,9 @@
 	"version": "0.0.0",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc && vite build && mv ./dist/index.html ./dist/js-only.html && ncp ./dist ../../dist",
-		"preview": "vite preview"
+		"build": "tsc && vite build && mv ./dist/index.html ./dist/js-only.html",
+		"preview": "vite preview",
+		"deploy": "ncp ./dist ../../dist"
 	},
 	"devDependencies": {
 		"@types/three": "^0.139.0",

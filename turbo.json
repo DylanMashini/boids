@@ -24,6 +24,10 @@
 		"//#install": {
 			"dependsOn": [],
 			"outputs": []
+		},
+		"deploy": {
+			"dependsOn": ["build"],
+			"outputs": []
 		}
 	}
 }

@@ -13,4 +13,3 @@ rm -rf ./dist/worker.ts
 rm -rf ./dist/pkg/*.ts
 rm -rf ./dist/pkg/*.json
 rm -rf ./dist/pkg/.gitignore
-ncp ./dist/ ../../dist/

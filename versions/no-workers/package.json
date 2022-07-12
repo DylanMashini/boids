@@ -11,7 +11,8 @@
 	},
 	"scripts": {
 		"dev": "rm -rf ./dist && wasm-pack build && webpack --config ./webpack.config.js --mode development && ncp ./static ./dist && node start.js",
-		"build": "yarn exec ./build.sh"
+		"build": "yarn exec ./build.sh",
+		"deploy": "ncp ./dist/ ../../dist/"
 	},
 	"devDependencies": {
 		"@types/three": "^0.140.0",
