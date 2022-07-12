@@ -27,7 +27,8 @@
 		},
 		"deploy": {
 			"dependsOn": ["build"],
-			"outputs": []
+			"outputs": [],
+			"cache": false
 		}
 	}
 }
