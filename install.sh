@@ -1,7 +1,7 @@
 #!/bin/sh
 set -o verbose
 
-install rust toolchain
+# install rust toolchain
 if ! command -v rustup &> /dev/null
 then
     curl https://sh.rustup.rs -sSf | sh -- -y
