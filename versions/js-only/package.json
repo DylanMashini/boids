@@ -1,0 +1,23 @@
+{
+	"name": "boids-js-only",
+	"private": true,
+	"version": "0.0.0",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build && mv ./dist/index.html ./dist/js-only.html",
+		"preview": "vite preview",
+		"deploy": "ncp ./dist ../../dist"
+	},
+	"devDependencies": {
+		"@types/three": "^0.139.0",
+		"typescript": "^4.5.4",
+		"vite": "^2.9.0"
+	},
+	"dependencies": {
+		"@types/stats.js": "^0.17.0",
+		"ncp": "^2.0.0",
+		"stats.js": "^0.17.0",
+		"three": "^0.139.2",
+		"three-orbit-controls": "^82.1.0"
+	}
+}

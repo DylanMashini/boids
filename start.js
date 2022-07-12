@@ -7,5 +7,6 @@ app.use((req, res, next) => {
 	res.set("Cross-Origin-Embedder-Policy", "require-corp");
 	next();
 });
+
 app.use(express.static("./dist"));
 app.listen(3000, () => console.log("Serving at http://localhost:3000"));
