@@ -42,6 +42,7 @@ impl Settings {
     }
 }
 
+// runs on every frame
 #[wasm_bindgen]
 pub fn animate(
     boids_obj: &[f64],
@@ -54,7 +55,6 @@ pub fn animate(
     highlight: bool,
 ) -> Vec<f64> {
     console_error_panic_hook::set_once();
-    //tempararily use default settings
     let settings = Settings::new(
         max_speed,
         max_force,
@@ -87,6 +87,7 @@ pub fn animate(
                     &boid_vector,
                     &Vector3::new(boid2.pos.x, boid2.pos.y, boid2.pos.z),
                 );
+
                 if distance > 0.0 {
                     if distance < settings.neighbohood_size {
                         //highlight if nececary

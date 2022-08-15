@@ -16,6 +16,7 @@
 		"test": "turbo test",
 		"dev": "turbo run dev",
 		"deploy": "turbo run deploy",
-		"install": "yarn exec ./install.sh"
+		"install": "yarn exec ./install.sh",
+		"start": "node start.js"
 	}
 }

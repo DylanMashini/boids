@@ -45,6 +45,7 @@ impl Boid {
 //not exported to wasm-bidngen because it has unsupported call signuture
 impl Boid {
     pub fn new_from_f64_array(arr: &[f64]) -> Vec<Boid> {
+        // Converts f64 buffer to Vec<Boid>
         let len = arr.len() / 9;
         let mut count = 0;
         let mut boids: Vec<Boid> = vec![];
@@ -72,6 +73,7 @@ impl Boid {
         return boids;
     }
     pub fn to_f64_arr(boids: Vec<Boid>) -> Vec<f64> {
+        // Converts Vec<Boid> to Vec<64> for return to js
         let mut arr: Vec<f64> = vec![];
         for boid in boids.iter() {
             arr.push(boid.pos.x);

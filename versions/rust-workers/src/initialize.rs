@@ -14,27 +14,26 @@ struct ThreadScope {
 pub fn initialize(
     boid_count: i16,
     settings: &JsValue,
-    hardware_concurrency_max: f64,
+    mut hardware_concurrency_max: f64,
 ) -> js_sys::SharedArrayBuffer {
     console_error_panic_hook::set_once();
-    let mut max_threads: f64 = hardware_concurrency_max; //redeclare as mutable var because we need to modify this to limit it to 100 boids a thread
-    //min of 100 boids per thread
-    if (boid_count) / (max_threads as i16) < 100 {
-        //goal is to have <=100 boids per thread
-        max_threads = (((boid_count) as f32 / 100.0) as i16) as f64; //using as i16 rounds number down
-        if max_threads == 0.0 {
-            //make sure we aren't creating 0 threads
-            max_threads = 1.0;
+    //if there is less than 100 boids per thread
+    if (boid_count) / (hardware_concurrency_max as i16) < 100 {
+        //set threads to max ammount with 100 boids per thread
+        hardware_concurrency_max = (((boid_count) as f32 / 100.0) as i16) as f64; //using as i16 rounds number down
+        // If there's less than 100 boids, create 1 thread
+        if hardware_concurrency_max == 0.0 {
+            hardware_concurrency_max = 1.0;
         }
     }
     let mut count = 0; //used to iterate through all threads
     let mut workers: Vec<Worker> = vec![];
     let buffer: js_sys::SharedArrayBuffer =
         js_sys::SharedArrayBuffer::new((boid_count as u32 * 8 * 9) + 4); //creates buffer with len of boid_count floatArr + 4 bytes for metadata
-    let jobs_per_worker = (boid_count) as i16 / max_threads as i16; // does not include boids that don't evenly divide
-    let mut extra_jobs = (boid_count) as i16 % max_threads as i16; //less than max_threads
+    let jobs_per_worker = (boid_count) as i16 / hardware_concurrency_max as i16; // does not include boids that don't evenly divide
+    let mut extra_jobs = (boid_count) as i16 % hardware_concurrency_max as i16; //less than hardware_concurrency_max
     let mut last_index = 0;
-    while max_threads > count as f64 {
+    while hardware_concurrency_max > count as f64 {
         let thread_boids;
         if extra_jobs > 0 {
             thread_boids = jobs_per_worker + 1;
@@ -57,6 +56,6 @@ pub fn initialize(
         last_index += thread_boids;
         count += 1;
     }
-    return buffer;
+    return buffer; // return the buffer with boid position
 }
 
