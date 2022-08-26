@@ -8,6 +8,7 @@ let floatBuffer: Float64Array;
 let metaBuffer: any;
 let indexes: number[];
 let boidsInfo: any;
+
 const run = () => {
 	//@ts-ignore
 	wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {

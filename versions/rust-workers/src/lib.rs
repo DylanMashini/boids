@@ -62,7 +62,7 @@ pub fn animate(
         color_seperation,
         highlight,
     );
-    let boids: Vec<Boid> = Boid::new_from_f64_array(boids_obj); // Creates Vec<Boid> for all boids
+    let mut boids: Vec<Boid> = Boid::new_from_f64_array(boids_obj); // Creates Vec<Boid> for all boids
     let assigned_boids = boids.clone()[min_index as usize..max_index as usize].to_vec(); //creates Vec<Boid> for boids in thread
     let mut near_boids: Vec<Boid> = vec![];
     let mut highlight_vectors: Vec<i16> = vec![];
@@ -73,46 +73,39 @@ pub fn animate(
         let mut alignment_count = 0.0;
         let mut cohesion_sum = Vector3::new(0.0, 0.0, 0.0);
         let mut cohesion_count = 0.0;
-        let boid_vector = Vector3::new(boid.pos.x, boid.pos.y, boid.pos.z);
         if i == 0 && settings.highlight {
             highlight_vectors.push(i as i16);
         }
         for (i2, boid2) in boids.iter().enumerate() {
+            //make sure boids are uniqe
             if !(boid.pos.x == boid2.pos.x
                 && boid.pos.y == boid2.pos.y
                 && boid.pos.z == boid2.pos.z)
             {
-                //boids are uniqe
                 let distance = Vector3::get_distance(
-                    &boid_vector,
+                    &boid.pos,
                     &Vector3::new(boid2.pos.x, boid2.pos.y, boid2.pos.z),
                 );
 
-                if distance > 0.0 {
-                    if distance < settings.neighbohood_size {
-                        //highlight if nececary
-                        if i == 0 && settings.highlight {
-                            highlight_vectors.push(i2 as i16);
-                        }
-                        //set boid2_vector
-                        let boid2_vector: Vector3 =
-                            Vector3::new(boid2.pos.x, boid2.pos.y, boid2.pos.z);
-                        let boid2_vel: Vector3 =
-                            Vector3::new(boid2.vel.x, boid2.vel.y, boid2.vel.z);
-                        //add boid to the allignmentsum
-                        alignment_sum.add(&boid2_vel);
-                        alignment_count += 1.0;
-                        //add to cohesion sum
-                        cohesion_sum.add(&boid2_vector);
-                        cohesion_count += 1.0;
-                        //do seperation rule
-                        let mut vec_dir = Vector3::new(0.0, 0.0, 0.0);
-                        vec_dir.sub_vectors(&boid_vector, &boid2_vector);
-                        vec_dir.normalize();
-                        vec_dir.divide_scalar(distance);
-                        seperation_sum.add(&vec_dir);
-                        seperation_count += 1.0;
+                if distance < settings.neighbohood_size {
+                    //highlight if nececary
+                    if i == 0 && settings.highlight {
+                        highlight_vectors.push(i2 as i16);
                     }
+
+                    //add boid to the allignmentsum
+                    alignment_sum.add(&boid2.vel);
+                    alignment_count += 1.0;
+                    //add to cohesion sum
+                    cohesion_sum.add(&boid2.pos);
+                    cohesion_count += 1.0;
+                    //do seperation rule
+                    let mut vec_dir = Vector3::new(0.0, 0.0, 0.0);
+                    vec_dir.sub_vectors(&boid.pos, &boid2.pos);
+                    vec_dir.normalize();
+                    vec_dir.divide_scalar(distance);
+                    seperation_sum.add(&vec_dir);
+                    seperation_count += 1.0;
                 }
             }
         }

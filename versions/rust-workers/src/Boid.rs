@@ -40,12 +40,15 @@ impl Boid {
         steer.clamp_length(0.0, max_force);
         return steer;
     }
+    pub fn step(&mut self) {
+        self.pos.add(&self.vel);
+    }
 }
 
 //not exported to wasm-bidngen because it has unsupported call signuture
 impl Boid {
+    // Converts f64 buffer to Vec<Boid>
     pub fn new_from_f64_array(arr: &[f64]) -> Vec<Boid> {
-        // Converts f64 buffer to Vec<Boid>
         let len = arr.len() / 9;
         let mut count = 0;
         let mut boids: Vec<Boid> = vec![];
