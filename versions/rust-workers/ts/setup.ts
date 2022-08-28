@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { VRButton } from "three/examples/jsm/webxr/VRButton.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { boid } from "./";
+import { boid } from "./boid";
 export default function setup(settings: any): {
 	scene: THREE.Scene;
 	renderer: THREE.WebGLRenderer;
@@ -29,7 +29,7 @@ export default function setup(settings: any): {
 	controls.update();
 	const boids = new Array<boid>();
 	for (let i = 0; i < settings.boidCount; i++) {
-		const bird = new boid(scene);
+		const bird = new boid(scene, settings);
 		boids.push(bird);
 	}
 	return { scene, renderer, camera, boids };

@@ -12,8 +12,6 @@ pub mod boid_module;
 use boid_module::Boid;
 #[macro_use]
 extern crate serde_derive;
-//use initilization function from initialize.rs
-mod initialize;
 
 #[derive(Clone)]
 #[wasm_bindgen]

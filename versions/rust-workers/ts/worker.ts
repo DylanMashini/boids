@@ -1,7 +1,4 @@
-importScripts("./pkg/boids_wasm.js");
-//@ts-ignore
-const { animate } = wasm_bindgen;
-
+import init, { animate } from "rs";
 let settings: any;
 let sharedMemory: any;
 let floatBuffer: Float64Array;
@@ -11,7 +8,7 @@ let boidsInfo: any;
 
 const run = () => {
 	//@ts-ignore
-	wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
+	init().then(() => {
 		setInterval(() => {
 			let values = animate(
 				floatBuffer,
@@ -36,6 +33,7 @@ const run = () => {
 		}, 20);
 	});
 };
+
 self.addEventListener("message", function handleMessageFromMain(msg) {
 	console.log("recived msg", msg);
 	//will recive two messages, first will be a settings, second will be a buffer

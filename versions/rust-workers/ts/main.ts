@@ -1,10 +1,9 @@
 import * as THREE from "three";
-import * as Stats from "stats.js";
+import Stats from "stats.js";
 import setup from "./setup";
 import changeBox from "./changeBox";
-
-// @ts-ignore
-const { initialize } = wasm_bindgen;
+import initWorkers from "./initWorkers";
+import { boid } from "./boid";
 
 // Check if webworkers and SharedBufferArray are supported
 if (typeof SharedArrayBuffer == "undefined") {
@@ -17,7 +16,6 @@ let floatThreads: Float64Array;
 let meta: Int16Array; //[0] is the frame, [1] is for closing the threads
 
 //list of colors to randomly choose
-const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
 
 //set default settings
 let settings = {
@@ -93,7 +91,7 @@ form.addEventListener("submit", e => {
 			} else {
 				//push a new boid to the array for each boidToAdd
 				for (let i = 0; i < boidsToAdd; i++) {
-					boids.push(new boid(scene));
+					boids.push(new boid(scene, settings));
 				}
 			}
 		}
@@ -147,93 +145,6 @@ form.addEventListener("submit", e => {
 	}
 });
 
-export class boid extends THREE.Mesh {
-	rot: THREE.Vector3;
-	vel: THREE.Vector3;
-	home: THREE.Vector3;
-	randomHome: boolean;
-	group: number;
-	highlight: boolean;
-	constructor(scene: THREE.Scene) {
-		const geo = new THREE.ConeGeometry(0.5, 2, 32, 32);
-		const group = Math.floor(Math.random() * colorList.length);
-		const mat = new THREE.MeshBasicMaterial({
-			color: colorList[group],
-		});
-		super(geo, mat);
-		this.rot = new THREE.Vector3(
-			(Math.PI / Math.random()) * 2,
-			(Math.PI / Math.random()) * 2,
-			(Math.PI / Math.random()) * 2
-		);
-		this.randomHome = false;
-		this.group = group;
-		this.position.x = this.randomPosition("x");
-		this.position.y = this.randomPosition("y");
-		this.position.z = this.randomPosition("z");
-		this.rotation.set(this.rot.x, this.rot.y, this.rot.z);
-		this.vel = new THREE.Vector3(0, 0, 0);
-		this.home = this.updateHome();
-		this.highlight = false;
-		scene.add(this);
-	}
-	updateBoid() {
-		if (this.highlight) {
-			// @ts-ignore
-			this.material.color.setHex(0xff0000);
-		} else {
-			// @ts-ignore
-			this.material.color.setHex(colorList[this.group]);
-		}
-		if (this.vel.x == 0) {
-			// console.log(this.vel);
-		}
-		//update the position with the velocity
-		// this.position.add(this.vel);
-		//set the rotation
-		this.quaternion.setFromUnitVectors(
-			new THREE.Vector3(0, 1, 0),
-			this.vel.clone().normalize()
-		);
-		//update home position
-		this.updateHome();
-	}
-	randomPosition(axis: String) {
-		//create multiplier to allow negative values
-		const neg = Math.random() > 0.5 ? -1 : 1;
-		switch (axis) {
-			case "x":
-				return Math.random() * neg * (settings.boxSize / 2);
-			case "y":
-				return Math.random() * neg * (settings.boxSize / 2);
-			case "z":
-				return Math.random() * neg * (settings.boxSize / 2);
-		}
-		return 0;
-	}
-	updateHome() {
-		//makes sure that home already exists
-		if (this.home) {
-			if (this.randomHome == settings.randomHome) {
-				return this.home;
-			}
-		}
-		const home = new THREE.Vector3(0, 0, 0);
-		if (settings.randomHome) {
-			this.randomHome = true;
-			const neg = Math.random() > 0.5 ? -1 : 1;
-			home.set(
-				Math.random() * neg * (settings.boxSize / 4),
-				Math.random() * neg * (settings.boxSize / 4),
-				Math.random() * neg * (settings.boxSize / 4)
-			);
-		} else {
-			this.randomHome = false;
-		}
-		return home;
-	}
-}
-
 const { scene, renderer, camera, boids } = setup(settings);
 
 let boxgeo: any = new THREE.BoxGeometry(
@@ -261,7 +172,7 @@ const startThreads = (boidCount: number, maxThreads: number) => {
 		meta = undefined;
 	}
 
-	sharedMemory = initialize(boidCount, settings, maxThreads);
+	sharedMemory = initWorkers(boidCount, settings);
 	floatThreads = new Float64Array(
 		sharedMemory,
 		0,
@@ -284,25 +195,25 @@ const startThreads = (boidCount: number, maxThreads: number) => {
 let executionPaused = false;
 //animation loop
 // @ts-ignore
-wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
-	startThreads(settings.boidCount, maxThreads);
-	//create previous tick val
-	let stats = new Stats();
-	document.body.appendChild(stats.dom);
-	renderer.setAnimationLoop(function () {
-		if (!executionPaused) {
-			stats.begin();
-			boids.forEach((_, i) => {
-				boids[i].position.x = floatThreads[i * 9];
-				boids[i].position.y = floatThreads[i * 9 + 1];
-				boids[i].position.z = floatThreads[i * 9 + 2];
-				boids[i].vel.x = floatThreads[i * 9 + 3];
-				boids[i].vel.y = floatThreads[i * 9 + 4];
-				boids[i].vel.z = floatThreads[i * 9 + 5];
-				boids[i].updateBoid();
-			});
-			renderer.render(scene, camera);
-			stats.end();
-		}
-	});
+// wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
+startThreads(settings.boidCount, maxThreads);
+//create previous tick val
+let stats = new Stats();
+document.body.appendChild(stats.dom);
+renderer.setAnimationLoop(function () {
+	if (!executionPaused) {
+		stats.begin();
+		boids.forEach((_, i) => {
+			boids[i].position.x = floatThreads[i * 9];
+			boids[i].position.y = floatThreads[i * 9 + 1];
+			boids[i].position.z = floatThreads[i * 9 + 2];
+			boids[i].vel.x = floatThreads[i * 9 + 3];
+			boids[i].vel.y = floatThreads[i * 9 + 4];
+			boids[i].vel.z = floatThreads[i * 9 + 5];
+			boids[i].updateBoid();
+		});
+		renderer.render(scene, camera);
+		stats.end();
+	}
 });
+// });
