@@ -11,7 +11,7 @@ export class boid extends THREE.Mesh {
 	colorList: number[];
 	constructor(scene: THREE.Scene, settings: any) {
 		const colorList = [0x8ce68c, 0xabf1bc, 0xaee7f8, 0x87cdf6];
-		const geo = new THREE.ConeGeometry(0.5, 2, 32, 32);
+		const geo = new THREE.ConeBufferGeometry(0.5, 2, 32, 32);
 		const group = Math.floor(Math.random() * colorList.length);
 		const mat = new THREE.MeshBasicMaterial({
 			color: colorList[group],
