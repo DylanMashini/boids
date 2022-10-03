@@ -15,8 +15,15 @@ export default function setup(settings: any): {
 		0.1,
 		1000
 	);
+	let pixelRatio = window.devicePixelRatio
+	let AA = true
+	if (pixelRatio > 1) {
+	  AA = false
+	}
 	const renderer = new THREE.WebGLRenderer({
 		canvas: document.querySelector("#canvas") as HTMLCanvasElement,
+		antialias: AA,
+		powerPreference: "high-performance",
 	});
 	document.body.appendChild(VRButton.createButton(renderer));
 	renderer.xr.enabled = true;
