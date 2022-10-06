@@ -13,7 +13,7 @@ if (typeof SharedArrayBuffer == "undefined") {
 let maxThreads = window.navigator.hardwareConcurrency || 4;
 let sharedMemory: SharedArrayBuffer;
 let floatThreads: Float64Array;
-let meta: Int16Array; //[0] is the frame, [1] is for closing the threads
+let meta: Int32Array; //[0] is the frame, [1] is for closing the threads
 
 //list of colors to randomly choose
 
@@ -176,9 +176,9 @@ const startThreads = (boidCount: number, maxThreads: number) => {
 	floatThreads = new Float64Array(
 		sharedMemory,
 		0,
-		(sharedMemory.byteLength - 4) / 8
-	); //-4 to remove the 4 byte metadata
-	meta = new Int16Array(sharedMemory, sharedMemory.byteLength - 4);
+		(sharedMemory.byteLength - 8) / 8
+	); //-8 to remove the 8 byte metadata
+	meta = new Int32Array(sharedMemory, sharedMemory.byteLength - 8);
 	boids.forEach((boid, i) => {
 		floatThreads[i * 9] = boid.position.x;
 		floatThreads[i * 9 + 1] = boid.position.y;
@@ -200,8 +200,15 @@ startThreads(settings.boidCount, maxThreads);
 //create previous tick val
 let stats = new Stats();
 document.body.appendChild(stats.dom);
+let newTick = 0;
 renderer.setAnimationLoop(function () {
 	if (!executionPaused) {
+		if (newTick > 1000) {
+			newTick = 0;
+		}
+		newTick++;
+		Atomics.store(meta, 0, newTick);
+		Atomics.notify(meta, 0);
 		stats.begin();
 		boids.forEach((_, i) => {
 			boids[i].position.x = floatThreads[i * 9];

@@ -6,7 +6,7 @@ export default function init(boid_count: number, settings: object) {
 	if (boid_count / concurency < 100) {
 		concurency = Math.floor(boid_count / 100);
 	}
-	let buffer = new SharedArrayBuffer(boid_count * 8 * 9 + 4);
+	let buffer = new SharedArrayBuffer(boid_count * 8 * 9 + 8);
 	let jobsPerWorker = Math.floor(boid_count / concurency);
 	let extraJobs = boid_count % concurency;
 	let lastIndex = 0;
