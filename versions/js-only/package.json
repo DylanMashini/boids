@@ -6,7 +6,7 @@
 		"dev": "vite",
 		"build": "tsc && vite build && mv ./dist/index.html ./dist/js-only.html",
 		"preview": "vite preview",
-		"deploy": "ncp ./dist ../../dist"
+		"deploy": "cp -rf ./dist ../../dist"
 	},
 	"devDependencies": {
 		"@types/three": "^0.139.0",
