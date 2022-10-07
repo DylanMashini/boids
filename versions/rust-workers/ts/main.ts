@@ -7,16 +7,16 @@ import { boid } from "./boid";
 
 // Check if webworkers and SharedBufferArray are supported
 if (typeof SharedArrayBuffer == "undefined") {
+  // if they aren't than send to the version that doesn't use SharedArrayBuffer
   window.location.href = "https://boids.dylanmashini.com/no-workers";
 }
 
 let maxThreads = window.navigator.hardwareConcurrency || 4;
 let sharedMemory: SharedArrayBuffer;
 let floatThreads: Float64Array;
-let meta: Int32Array; //[0] is the frame, [1] is for closing the threads
+let meta: Int32Array; //[0] is for Atomic Synchronization 
 let threadCount: Number;
 
-//list of colors to randomly choose
 
 //set default settings
 let settings = {
@@ -32,7 +32,7 @@ let settings = {
 };
 
 //get html form
-const form = document.querySelector("form")!;
+const form = document.querySelector("form") as HTMLFormElement;
 
 //setup inital form values
 form["maxSpeed"].value = String(settings["maxSpeed"]);
@@ -114,7 +114,7 @@ form.addEventListener("submit", (e) => {
     if (form["sphere"].checked) {
       scene.remove(box);
       boxgeo.dispose();
-      boxgeo = new THREE.SphereGeometry(settings.boxSize, 32, 32);
+      boxgeo = new THREE.SphereBufferGeometry(settings.boxSize, 32, 32);
       box = new THREE.Mesh(boxgeo, boxmat);
       scene.add(box);
 
@@ -147,7 +147,7 @@ form.addEventListener("submit", (e) => {
 
 const { scene, renderer, camera, boids } = setup(settings);
 
-let boxgeo: any = new THREE.BoxGeometry(
+let boxgeo: any = new THREE.BoxBufferGeometry(
   settings.boxSize,
   settings.boxSize,
   settings.boxSize
@@ -213,9 +213,11 @@ renderer.setAnimationLoop(function () {
       newTick = 0;
     }
     newTick++;
+    // track fps with stats module
+    stats.begin();
+    // notify all threads to start frame using Atomics
     Atomics.store(meta, 0, newTick);
     Atomics.notify(meta, 0);
-    stats.begin();
     boids.forEach((_, i) => {
       boids[i].position.x = floatThreads[i * 9];
       boids[i].position.y = floatThreads[i * 9 + 1];
@@ -229,4 +231,3 @@ renderer.setAnimationLoop(function () {
     stats.end();
   }
 });
-// });
