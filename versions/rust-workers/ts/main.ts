@@ -200,7 +200,6 @@ const startThreads = (boidCount: number, maxThreads: number) => {
 let executionPaused = false;
 //animation loop
 // @ts-ignore
-// wasm_bindgen("./pkg/boids_wasm_bg.wasm").then(() => {
 startThreads(settings.boidCount, maxThreads);
 //create previous tick val
 let stats = new Stats();
