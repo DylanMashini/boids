@@ -41,6 +41,7 @@ const run = () => {
 };
 
 self.addEventListener("message", function handleMessageFromMain(msg) {
+	console.log("Recived Message")
 	//will recive two messages, first will be a settings, second will be a buffer
 	if (msg.data.byteLength) {
 		//message is buffer

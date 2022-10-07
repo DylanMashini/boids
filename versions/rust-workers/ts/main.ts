@@ -11,8 +11,6 @@ if (typeof SharedArrayBuffer == "undefined") {
 	window.location.href = "https://boids.dylanmashini.com/no-workers";
 }
 
-console.log("Running Here!!");
-
 let maxThreads = window.navigator.hardwareConcurrency || 4;
 let sharedMemory: SharedArrayBuffer;
 let floatThreads: Float64Array;
@@ -205,9 +203,9 @@ startThreads(settings.boidCount, maxThreads);
 let stats = new Stats();
 document.body.appendChild(stats.dom);
 let newTick = 0;
-while (Atomics.load(meta, 1) != threadCount) {
-	Atomics.wait(meta, 1, Atomics.load(meta, 1));
-}
+// while (Atomics.load(meta, 1) != threadCount) {
+// 	Atomics.wait(meta, 1, Atomics.load(meta, 1));
+// }
 renderer.setAnimationLoop(function () {
 	if (!executionPaused) {
 		if (newTick > 1000) {

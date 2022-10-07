@@ -18,11 +18,7 @@ export default function init(boid_count: number, settings: object) {
 		} else {
 			threadBoids = jobsPerWorker;
 		}
-		console.log("Creating Worker");
 		const worker: Worker = createWorker();
-		console.log("Worker Created");
-		console.log(worker);
-
 		worker.postMessage(buffer);
 		worker.postMessage(settings);
 		worker.postMessage({
