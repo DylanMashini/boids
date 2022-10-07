@@ -14,7 +14,7 @@
 	"scripts": {
 		"build": "yarn exec ./build.sh",
 		"dev": "yarn exec ./dev.sh",
-		"deploy": "cp -rf ./dist ../../dist"
+		"deploy": "ncp ./dist/ ../../dist/"
 	},
 	"devDependencies": {
 		"@types/three": "^0.140.0",
