@@ -6,7 +6,8 @@ export default function setup(settings: any): {
 	scene: THREE.Scene;
 	renderer: THREE.WebGLRenderer;
 	camera: THREE.PerspectiveCamera;
-	boids: boid[];
+	// boids: boid[];
+	boids: null;
 } {
 	const scene = new THREE.Scene();
 	const camera = new THREE.PerspectiveCamera(
@@ -15,10 +16,10 @@ export default function setup(settings: any): {
 		0.1,
 		1000
 	);
-	let pixelRatio = window.devicePixelRatio
-	let AA = true
+	let pixelRatio = window.devicePixelRatio;
+	let AA = true;
 	if (pixelRatio > 1) {
-	  AA = false
+		AA = false;
 	}
 	const renderer = new THREE.WebGLRenderer({
 		canvas: document.querySelector("#canvas") as HTMLCanvasElement,
@@ -34,10 +35,10 @@ export default function setup(settings: any): {
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	const controls = new OrbitControls(camera, renderer.domElement);
 	controls.update();
-	const boids = new Array<boid>();
-	for (let i = 0; i < settings.boidCount; i++) {
-		const bird = new boid(scene, settings);
-		boids.push(bird);
-	}
-	return { scene, renderer, camera, boids };
+	// const boids = new Array<boid>();
+	// for (let i = 0; i < settings.boidCount; i++) {
+	// 	const bird = new boid(scene, settings);
+	// 	boids.push(bird);
+	// }
+	return { scene, renderer, camera, boids: null };
 }
