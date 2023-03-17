@@ -9,4 +9,4 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static("./dist"));
-app.listen(3000, () => console.log("Serving at http://localhost:3000"));
+app.listen(3001, () => console.log("Serving at http://localhost:3001"));

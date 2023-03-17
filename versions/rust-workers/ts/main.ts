@@ -3,7 +3,7 @@ import Stats from "stats.js";
 import setup from "./setup";
 import changeBox from "./changeBox";
 import initWorkers from "./initWorkers";
-import { boid } from "./boid";
+import Boids from "./boids";
 
 // Check if webworkers and SharedBufferArray are supported
 if (typeof SharedArrayBuffer == "undefined") {
@@ -78,12 +78,11 @@ form.addEventListener("submit", e => {
 				//user put in negative ammount of boids
 				console.error("Cant have negative boids");
 			} else {
-				// for (let i = 0; i < boidsToRemove; i++) {
-				// 	//remove one item from array + dispose of all THREE.js classes
-				// 	boids[0].geometry.dispose();
-				// 	scene.remove(boids[0]);
-				// 	boids.shift();
-				// }
+				instancedBoids.dispose();
+				let newSettings = { ...settings };
+				newSettings["boidCount"] = Number(form["boidCount"].value);
+				instancedBoids = new Boids(scene, newSettings);
+				restartWebWorker = true;
 			}
 		} else {
 			//need to add boids
@@ -95,10 +94,11 @@ form.addEventListener("submit", e => {
 				//user put in negative number
 				console.error("Can't have negative boids");
 			} else {
-				//push a new boid to the array for each boidToAdd
-				// for (let i = 0; i < boidsToAdd; i++) {
-				// 	boids.push(new boid(scene, settings));
-				// }
+				let newSettings = { ...settings };
+				newSettings["boidCount"] = Number(form["boidCount"].value);
+				instancedBoids.dispose();
+				instancedBoids = new Boids(scene, newSettings);
+				restartWebWorker = true;
 			}
 		}
 	}
@@ -153,6 +153,8 @@ form.addEventListener("submit", e => {
 
 const { scene, renderer, camera, boids } = setup(settings);
 
+let instancedBoids = new Boids(scene, settings);
+
 let boxgeo: any = new THREE.BoxBufferGeometry(
 	settings.boxSize,
 	settings.boxSize,
@@ -188,17 +190,11 @@ const startThreads = (boidCount: number, maxThreads: number) => {
 		(sharedMemory.byteLength - 8) / 8
 	); //-8 to remove the 8 byte metadata
 	meta = new Int32Array(sharedMemory, sharedMemory.byteLength - 8);
-	// boids.forEach((boid, i) => {
-	// 	floatThreads[i * 9] = boid.position.x;
-	// 	floatThreads[i * 9 + 1] = boid.position.y;
-	// 	floatThreads[i * 9 + 2] = boid.position.z;
-	// 	floatThreads[i * 9 + 3] = boid.vel.x;
-	// 	floatThreads[i * 9 + 4] = boid.vel.y;
-	// 	floatThreads[i * 9 + 5] = boid.vel.z;
-	// 	floatThreads[i * 9 + 6] = boid.home.x;
-	// 	floatThreads[i * 9 + 7] = boid.home.y;
-	// 	floatThreads[i * 9 + 8] = boid.home.z;
-	// });
+	for (let i = 0; i < boidCount; i++) {
+		floatThreads[i * 9] = instancedBoids.startingPositions[i].position.x;
+		floatThreads[i * 9 + 1] = instancedBoids.startingPositions[i].position.y;
+		floatThreads[i * 9 + 2] = instancedBoids.startingPositions[i].position.z;
+	}
 	executionPaused = false;
 };
 let executionPaused = false;
@@ -213,8 +209,6 @@ let newTick = 0;
 // 	Atomics.wait(meta, 1, Atomics.load(meta, 1));
 // }
 scene.add(instancedMesh);
-document.body.querySelector(".debug")!.innerHTML =
-	"RandomPos: " + floatThreads[88];
 let dummy = new THREE.Object3D();
 renderer.setAnimationLoop(function () {
 	if (!executionPaused) {
@@ -227,23 +221,7 @@ renderer.setAnimationLoop(function () {
 		// notify all threads to start frame using Atomics
 		Atomics.store(meta, 0, newTick);
 		Atomics.notify(meta, 0);
-		// boids.forEach((_, i) => {
-		// 	boids[i].position.x = floatThreads[i * 9];
-		// 	boids[i].position.y = floatThreads[i * 9 + 1];
-		// 	boids[i].position.z = floatThreads[i * 9 + 2];
-		// 	boids[i].vel.x = floatThreads[i * 9 + 3];
-		// 	boids[i].vel.y = floatThreads[i * 9 + 4];
-		// 	boids[i].vel.z = floatThreads[i * 9 + 5];
-		// 	boids[i].updateBoid();
-		// });
-		for (let i = 0; i < instancedMesh.count; i++) {
-			dummy.position.x = floatThreads[i * 9];
-			dummy.position.y = floatThreads[i * 9 + 1];
-			dummy.position.z = floatThreads[i * 9 + 2];
-			dummy.updateMatrix();
-			instancedMesh.setMatrixAt(i, dummy.matrix);
-		}
-		instancedMesh.instanceMatrix.needsUpdate = true;
+		instancedBoids.updateBoids(floatThreads);
 		renderer.render(scene, camera);
 		stats.end();
 	}
