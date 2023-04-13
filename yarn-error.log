@@ -14,7 +14,11 @@ Platform:
   darwin x64
 
 Trace: 
-  Error: ENOENT: no such file or directory, open '/Users/dylanmashini/Library/Caches/Yarn/v6/npm-@swc-core-linux-arm64-gnu-1.2.244-daa61051c971c30dd3bb5414be98ca7392b08c06-integrity/node_modules/@swc/core-linux-arm64-gnu/.yarn-metadata.json'
+  Error: unable to get local issuer certificate
+      at TLSSocket.onConnectSecure (node:_tls_wrap:1532:34)
+      at TLSSocket.emit (node:events:527:28)
+      at TLSSocket._finishInit (node:_tls_wrap:946:8)
+      at TLSWrap.ssl.onhandshakedone (node:_tls_wrap:727:12)
 
 npm manifest: 
   {

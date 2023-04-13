@@ -16,7 +16,10 @@
 		"test": "turbo test",
 		"dev": "turbo run dev",
 		"deploy": "turbo run deploy",
-		"install": "yarn exec ./install.sh",
+		"install": "./install.sh",
 		"start": "node start.js"
+	},
+	"dependencies": {
+		"express": "^4.18.1"
 	}
 }
